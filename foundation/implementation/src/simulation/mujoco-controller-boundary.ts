@@ -220,8 +220,11 @@ export async function createMeasuredControllerSupervisor(world: any, registratio
     if(!lease||authority.session_id!==identity.session_id||authority.project_revision!==identity.project_revision||authority.run_epoch!==identity.run_epoch||
        authority.lease_generation!==lease.generation||authority.channel_id!==channel.id||authority.definition_sha256!==channel.definition_sha256||
        !config.grant||config.grant.max_entries<count)throw Error('Invalid recording authority');
-    const recorder=config.grant.purpose==='channel-recording' ?
-      createGrantedChannelRecorder(authority,config.grant,channel).log : createGrantedMeasurementRecorder(authority,config.grant);
+    let recorder:ReturnType<typeof createGrantedMeasurementRecorder> & {readonly channel?:unknown};
+    if(config.grant.purpose==='channel-recording') {
+      const granted=createGrantedChannelRecorder(authority,config.grant,channel);
+      recorder=Object.freeze({...granted.log,channel:granted.channel});
+    } else recorder=createGrantedMeasurementRecorder(authority,config.grant);
     stepRecorders.add(recorder);return recorder;
   }
   function setTarget(input: unknown) {

@@ -2,6 +2,7 @@ import {captureProjectInventory} from '../projects/project-inventory.ts';
 import {createMujocoWorldFromProject} from '../simulation/mujoco-world.ts';
 import {prepareWorldControllerBindings, bindWorldControllers} from './world-controller-bind.ts';
 import {copyBounded, DataBudgetExceeded} from './project-world-wire.ts';
+import {channelStepBudget} from '../experiments/channel-step-budget.ts';
 
 type HeldWorld = Awaited<ReturnType<typeof createMujocoWorldFromProject>>['world'];
 type Supervisor = Awaited<ReturnType<typeof bindWorldControllers>>;
@@ -247,15 +248,16 @@ worker.addEventListener('message', event => {
         message.identity.run_epoch !== identity.run_epoch) return;
     const stepRequest = message.request_id, sequence = message.command_sequence, count = message.steps;
     const owner = supervisor, heldWorld = world;
+    const startTick=heldWorld.inspect().plant.tick;
     let recording:any=null,recorder:ReturnType<typeof owner.createStepRecorder>|null=null;
     if(Object.hasOwn(message,'recording')){
       try{
         recording=copyBounded(message.recording,8192);
         if(!exact(recording,['authority','grant','attempt_token'])||typeof recording.attempt_token!=='string'||!recording.attempt_token||recording.attempt_token.length>256)throw Error('Invalid recording request');
         recorder=owner.createStepRecorder({authority:recording.authority,grant:recording.grant},count);
+        if(recorder.channel!==undefined)channelStepBudget({request_id:stepRequest,generation,command_sequence:sequence,identity,start_tick:startTick,steps:count,attempt_token:recording.attempt_token,authority:recording.authority},recorder.channel);
       }catch{try{send({kind:'step-error',request_id:stepRequest,generation,identity,command_sequence:sequence,steps_completed:0,error:'Recording not authorized'});}catch{}return;}
     }
-    const startTick=heldWorld.inspect().plant.tick;
     commandSequence = sequence; state = 'stepping';
     task = (async () => {
       let completed = 0;
@@ -269,7 +271,7 @@ worker.addEventListener('message', event => {
         const inspection = heldWorld.inspect();
         const acknowledgment:any = {kind:'stepped',request_id:stepRequest,generation,identity,command_sequence:sequence,
           steps_completed:completed,inspection};
-        if(recorder)acknowledgment.measurement_batch={request_id:stepRequest,generation,command_sequence:sequence,identity,start_tick:startTick,steps:count,attempt_token:recording.attempt_token,authority:recording.authority,rows:recorder.snapshot().entries};
+        if(recorder)acknowledgment.measurement_batch={request_id:stepRequest,generation,command_sequence:sequence,identity,start_tick:startTick,steps:count,attempt_token:recording.attempt_token,authority:recording.authority,...(recorder.channel!==undefined?{channel:recorder.channel}:{}),rows:recorder.snapshot().entries};
         let pose:ReturnType<HeldWorld['forwardVisualFrame']> | null = null;
         if (message.capture_forward_pose === true) {
           try {
@@ -289,7 +291,7 @@ worker.addEventListener('message', event => {
       } catch (error) {
         if (state !== 'stepping') return;
         const errorReply:any={kind:'step-error',request_id:stepRequest,generation,identity,command_sequence:sequence,steps_completed:completed,error:'Controller step failed'};
-        if(recorder)try{errorReply.measurement_batch={request_id:stepRequest,generation,command_sequence:sequence,identity,start_tick:startTick,steps:count,attempt_token:recording.attempt_token,authority:recording.authority,rows:recorder.snapshot().entries};}catch{}
+        if(recorder)try{errorReply.measurement_batch={request_id:stepRequest,generation,command_sequence:sequence,identity,start_tick:startTick,steps:count,attempt_token:recording.attempt_token,authority:recording.authority,...(recorder.channel!==undefined?{channel:recorder.channel}:{}),rows:recorder.snapshot().entries};}catch{}
         try {send(errorReply);} catch {try{delete errorReply.measurement_batch;send(errorReply);}catch{}}
         failure(error);
       }

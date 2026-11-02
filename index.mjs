@@ -39,7 +39,7 @@ export function mount(host) {
    if(await digest(bytes)!==PROJECT_HASH)throw Error('Built-in project integrity check failed');
    if(disposed||host.signal?.aborted)return;
    const decision={project_revision:REVISION,...structuredClone(profile),runnerOrigin:origin,frameURL:origin+'/frame',policy:{...structuredClone(profile.policy),wasmUrl:new URL('./node_modules/@mujoco/mujoco/mujoco.wasm',import.meta.url).href}};
-   application=mountProjectApplication({root,chooseDirectory:()=>typeof window.showDirectoryPicker==='function'?window.showDirectoryPicker():Promise.reject(Error('Folder selection unavailable')),folderLimits:{max_files:512,max_file_bytes:16777216,max_total_bytes:67108864,max_depth:32,max_path_length:240},inventoryLimits:decision.policy.inventoryLimits,resolveTrusted:r=>r===REVISION?structuredClone(decision):null});
+   application=mountProjectApplication({root,chooseDirectory:()=>typeof window.showDirectoryPicker==='function'?window.showDirectoryPicker():Promise.reject(Error('Folder selection unavailable')),folderLimits:{max_files:512,max_file_bytes:16777216,max_total_bytes:67108864,max_depth:32,max_path_length:240},inventoryLimits:decision.policy.inventoryLimits,resolveTrusted:r=>r===REVISION?structuredClone(decision):null,onSessionPublished:()=>{if(!disposed&&host.w)host.w.microduck={dirty:true}}});
    if(disposed||host.signal?.aborted){const owned=application;application=null;await owned.dispose();return}
    application.openFile(new File([bytes],'microduck.brf',{type:'application/json'}));
    status.textContent='Opening Microduck...';

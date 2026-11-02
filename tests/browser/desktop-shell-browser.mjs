@@ -35,6 +35,12 @@ try{
  await page.waitForFunction(()=>document.querySelector('[data-brf=app-status]')?.textContent==='Project open.',null,{timeout:30000});
  const saved=await page.locator('[data-brf=saved-records]').textContent();
  if(!saved.includes('0.25'))throw Error('Saved target missing: '+saved);
+ await page.locator('.window.focused [aria-label=Close]').click();
+ await page.getByRole('dialog').getByRole('button',{name:'Keep editing'}).click();
+ if(!await page.locator('.window-content.microduck-app').count())throw Error('Keep editing closed the app');
+ await page.locator('.window.focused [aria-label=Close]').click();
+ await page.getByRole('dialog').getByRole('button',{name:'Discard changes'}).click();
+ await page.waitForFunction(()=>document.querySelectorAll('.window-content.microduck-app').length===0&&document.querySelectorAll('iframe').length===0,null,{timeout:30000});
  if(errors.length)throw Error('Page errors '+JSON.stringify(errors));
  console.log(JSON.stringify({browser:browser.version(),status:'passed',step:1,saved,errors}));
 }finally{await browser.close()}

@@ -63,8 +63,8 @@ export function getTrustedOpeningConfiguration(): TrustedConfiguration | null {
 
 export function mountProjectApplication(options: {root: HTMLElement; chooseDirectory: ProjectInspectorConfig['chooseDirectory'];
   folderLimits: ProjectInspectorConfig['folderLimits']; inventoryLimits: ProjectInspectorConfig['inventoryLimits'];
-  resolveTrusted: Resolver | null}) {
-  const {root, chooseDirectory, folderLimits, inventoryLimits, resolveTrusted} = options;
+  resolveTrusted: Resolver | null; onSessionPublished?:()=>void}) {
+  const {root, chooseDirectory, folderLimits, inventoryLimits, resolveTrusted, onSessionPublished} = options;
   if (!root || !root.ownerDocument || typeof root.appendChild !== 'function' ||
       typeof chooseDirectory !== 'function' || (resolveTrusted !== null && typeof resolveTrusted !== 'function')) {
     throw new Error('Invalid project application');
@@ -209,6 +209,7 @@ export function mountProjectApplication(options: {root: HTMLElement; chooseDirec
         const selectedAfterMount = inspector?.selectedProject;
         if (disposed || run.cancelled || active !== run || selectedAfterMount !== selected) throw new Error('Selection changed');
         run.phase = 'published'; ok = true; status.textContent = 'Project open.'; syncGoal();
+        try {onSessionPublished?.();} catch { /* A presentation observer cannot alter session admission. */ }
       } catch (error) {
         sourceError=error;
         if (!disposed && !run.cancelled && active===run) status.textContent = 'Project start failed.';

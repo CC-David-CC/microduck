@@ -33,7 +33,7 @@ export function mount(host) {
  const resetGrant=()=>{driveGrant.revoke();granted=false;grantButton.textContent='Allow agent drive';grantStatus.textContent='Agent drive is off.';};
  grantButton.addEventListener('click',()=>{try{if(granted){resetGrant();return}driveGrant.enable();granted=true;grantButton.textContent='Turn off agent drive';grantStatus.textContent='Agent drive is on. The agent must still request a target.'}catch{resetGrant();grantStatus.textContent='Open a session before enabling agent drive.'}});
  let replaceProject=async()=>{throw Error('Project is not open')};
- const fileApplication={captureFile:()=>{if(!application)throw Error('Project is not open');return application.captureFile()},replaceFile:(file,isCurrent)=>replaceProject(file,isCurrent)};
+ const fileApplication={captureFile:()=>{if(!application)throw Error('Project is not open');return application.captureFile()},replaceFile:(file,isCurrent,precommit)=>replaceProject(file,isCurrent,precommit)};
  const actions=host.storage?createFileActions(host,()=>fileApplication,()=>!disposed):null;
  save.disabled=!actions;open.disabled=!actions;
  save.addEventListener('click',()=>{if(!actions)return;fileStatus.textContent='Saving project...';void actions.saveAs().then(result=>{if(!disposed&&result)fileStatus.textContent=result.current?'Saved locally: '+result.path+' ('+result.status+'). The live simulation state is not fully saved.':'An earlier snapshot was saved; the current session has changed.'},error=>{if(!disposed)fileStatus.textContent='Save failed: '+String(error?.message||error)})});
@@ -52,12 +52,15 @@ export function mount(host) {
    if(disposed||host.signal?.aborted)return;
    const decision={project_revision:REVISION,...structuredClone(profile),runnerOrigin:origin,frameURL:origin+'/frame',policy:{...structuredClone(profile.policy),wasmUrl:new URL('./node_modules/@mujoco/mujoco/mujoco.wasm',import.meta.url).href}};
    const makeApplication=(node,onPublished,onFailed)=>mountProjectApplication({root:node,compactPresentation:true,publishedDuckAssetURL:new URL('./assets/microduck-visual.json',import.meta.url).href,chooseDirectory:()=>typeof window.showDirectoryPicker==='function'?window.showDirectoryPicker():Promise.reject(Error('Folder selection unavailable')),folderLimits:{max_files:512,max_file_bytes:16777216,max_total_bytes:67108864,max_depth:32,max_path_length:240},inventoryLimits:decision.policy.inventoryLimits,resolveTrusted:r=>r===REVISION?structuredClone(decision):null,onSessionPublished:onPublished,onOpenFailed:onFailed});
-   const published=()=>{if(!disposed){status.textContent='Microduck ready.';resetGrant();grantButton.disabled=!host.commands;if(host.w)host.w.microduck={dirty:true};try{quickDrive?.dispose();quickDrive=mountQuickDrive(root,()=>application?.getDriveSession())}catch{quickDrive=null}}};
+   let initial=host.w?.launchContext?.storage==='mirror'?host.w.launchContext:null;
+   const published=()=>{if(!disposed){status.textContent='Microduck ready.';resetGrant();grantButton.disabled=!host.commands;if(host.w)host.w.microduck={dirty:true};try{quickDrive?.dispose();quickDrive=mountQuickDrive(root,()=>application?.getDriveSession())}catch{quickDrive=null}
+    if(initial){const request=initial;initial=null;queueMicrotask(()=>{if(disposed||!actions||request.owner!==host.storage.signedInSubject())return;fileStatus.textContent='Opening project...';void actions.open(request.path).then(result=>{if(!disposed&&result)fileStatus.textContent='Opened '+result.path+'. Saved records are unverified.'},error=>{if(!disposed)fileStatus.textContent='Open failed: '+String(error?.message||error)})})}
+   }};
    applicationRoot=document.createElement('div');root.append(applicationRoot);
    application=makeApplication(applicationRoot,published,()=>{if(!disposed)status.textContent='Unable to open Microduck project.'});
-   replaceProject=async(file,isCurrent)=>{const previous=application,previousRoot=applicationRoot;if(!previous||staged)throw Error('Project replacement unavailable');
+   replaceProject=async(file,isCurrent,precommit)=>{const previous=application,previousRoot=applicationRoot;if(!previous||staged)throw Error('Project replacement unavailable');
     const wasInert=previousRoot.inert;previousRoot.inert=true;resetGrant();
-    try {await stageReplacement({file,isCurrent:()=>!disposed&&application===previous&&isCurrent(),signal:abort.signal,createCandidate:input=>{
+    try {await stageReplacement({file,isCurrent:()=>!disposed&&application===previous&&isCurrent(),precommit,signal:abort.signal,createCandidate:input=>{
      const node=document.createElement('div');node.className='microduck-stage';root.append(node);let resolve,reject;const ready=new Promise((yes,no)=>{resolve=yes;reject=no});
      let owned;try{owned=makeApplication(node,()=>resolve(),()=>reject(Error('Unable to open the selected project')));staged=owned}catch(error){node.remove();throw error}
      try{owned.openFile(input)}catch(error){reject(error)}

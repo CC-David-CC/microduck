@@ -3,6 +3,7 @@ import {copyBounded} from '../session/project-world-wire.ts';
 const exact=(v:any,keys:readonly string[])=>!!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length===keys.length&&keys.every(k=>Object.hasOwn(v,k));
 const sameIdentity=(a:any,b:any)=>!!a&&!!b&&a.session_id===b.session_id&&a.project_revision===b.project_revision&&a.run_epoch===b.run_epoch;
 const projectedRecords=new WeakSet<object>();
+export function isProjectedCommandBoundary(value:unknown):boolean{return !!value&&typeof value==='object'&&projectedRecords.has(value as object);}
 const identityKeys=['session_id','project_revision','run_epoch'];
 const inputKeys=['actuator_name','component','unit','semantic','engine_index','input_range','requested','applied','limited'];
 const recordKeys=['identity','boundary_tick','outcome','group_id','lease_generation','sequence','source','request_tick','inputs'];

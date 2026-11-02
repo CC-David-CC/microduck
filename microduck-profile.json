@@ -372,7 +372,7 @@
     },
     "timeoutMs": 60000,
     "maxReplyBytes": 1048576,
-    "frameTimeoutMs": 3000,
+    "frameTimeoutMs": 15000,
     "approvedGrants": [
       {
         "group_id": "all",

@@ -8,7 +8,11 @@ export function createFileActions(host,getApplication,isAlive) {
    const owner=host.storage.signedInSubject();if(!owner)throw Error('Sign in to save to My files');
    const folder=await host.storage.pickFolder({signal:host.signal});if(folder===null)return null;
    const context=await host.storage.mirrorFileContext();check(context,owner);
-   const name=context.name('Microduck.brf'),path=context.path((folder==='/'?'':folder)+'/'+name);
+   if(typeof host.ui?.prompt!=='function')throw Error('Filename entry unavailable');
+   const chosen=await host.ui.prompt('Project filename:',{title:'Save Microduck project',value:'Microduck.brf',confirmLabel:'Save',signal:host.signal});
+   check(context,owner);if(chosen===null)return null;
+   const name=context.name(chosen.trim());if(!/\.brf$/i.test(name))throw Error('Use a .brf filename');
+   const path=context.path((folder==='/'?'':folder)+'/'+name);
    let expected=null;
    if(typeof context.files.stat==='function'){
     let existing=null;
@@ -32,15 +36,19 @@ export function createFileActions(host,getApplication,isAlive) {
    try{check(context,owner)}catch{throw Error('The account changed; the save outcome may be unknown')}
    return {path,status:result.status,version:result.version,current:captured.isCurrent()};
   })},
-  open(){return run(async()=>{
+  open(selected){return run(async()=>{
    const owner=host.storage.signedInSubject();if(!owner)throw Error('Sign in to open My files');
-   const choice=await host.storage.pickFile({extensions:['.brf'],signal:host.signal});if(choice===null)return null;
+   const choice=selected??await host.storage.pickFile({extensions:['.brf'],signal:host.signal});if(choice===null)return null;
    const context=await host.storage.mirrorFileContext();check(context,owner);
-   const path=context.path(choice),file=await context.files.read(path);check(context,owner);
+   const path=context.path(choice);if(!/\.brf$/i.test(path))throw Error('Choose a .brf project');
+   const file=await context.files.read(path);check(context,owner);
    if(file.status==='conflict')throw Error('Resolve the file conflict in My files first');
+   if(typeof file.version!=='string'||!file.version)throw Error('Project version unavailable');
    if(!(file.data instanceof Uint8Array)||file.data.byteLength>67108864)throw Error('Project file is invalid or too large');
    const app=getApplication();if(!app)throw Error('Project is not open');
-   await app.replaceFile(new File([file.data],'microduck.brf',{type:'application/json'}),()=>{try{check(context,owner);return true}catch{return false}});
+   const validate=async()=>{const current=await context.files.stat(path);check(context,owner);if(current.status==='conflict'||current.version!==file.version)throw Error('The project changed while opening; try again')};
+   await validate();
+   await app.replaceFile(new File([file.data],path.split('/').pop(),{type:'application/json'}),()=>{try{check(context,owner);return true}catch{return false}},validate);
    check(context,owner);
    return {path,version:file.version,status:file.status};
   })}

@@ -12,14 +12,14 @@ export function createCommandBatchRecorder(authorityInput:unknown,layoutInput:un
     !Number.isSafeInteger(start)||start<0||!Number.isSafeInteger(count)||count<1||count>64||!Number.isSafeInteger(start+count)||!layout||layout.group_id!==authority.group_id||!Number.isSafeInteger(layout.control_stride)||layout.control_stride<1||!Array.isArray(layout.blocks)||!layout.blocks.length)throw Error('Invalid command batch');
  if(previous!==undefined&&previous!==null){const p=previous as any;if(!isProjectedCommandBoundary(p)||!same(p.identity,authority)||p.group_id!==authority.group_id||p.lease_generation!==authority.lease_generation||p.boundary_tick!==start-1||p.outcome!=='completed')throw Error('Invalid preceding command evidence');}
  const inputs:any[]=[],indices=new Set<number>();
- for(const block of layout.blocks){if(!block||typeof block.actuator_name!=='string'||!block.actuator_name||!Array.isArray(block.inputs)||!Array.isArray(block.engine_indices)||!block.inputs.length||block.inputs.length!==block.engine_indices.length)throw Error('Invalid command layout');
+ for(const block of layout.blocks){if(!block||block.validation_rule_id!=='independent-scalar-ranges'||typeof block.actuator_name!=='string'||!block.actuator_name||!Array.isArray(block.inputs)||!Array.isArray(block.engine_indices)||!block.inputs.length||block.inputs.length!==block.engine_indices.length)throw Error('Invalid command layout');
   for(let i=0;i<block.inputs.length;i++){const x=block.inputs[i],engine_index=block.engine_indices[i],range=x?.input_range;
    if(!x||x.actuator_name!==block.actuator_name||!Number.isSafeInteger(x.component)||x.component<0||typeof x.unit!=='string'||!x.unit||typeof x.semantic!=='string'||!x.semantic||!Number.isSafeInteger(engine_index)||engine_index<0||engine_index>=4096||indices.has(engine_index)||!(range===null||Array.isArray(range)&&range.length===2&&range.every((v:any)=>typeof v==='number'&&Number.isFinite(v))&&range[0]<=range[1]))throw Error('Invalid command input');
-   indices.add(engine_index);inputs.push({actuator_name:x.actuator_name,component:x.component,unit:x.unit,semantic:x.semantic,engine_index,input_range:range});
+   indices.add(engine_index);inputs.push({actuator_name:x.actuator_name,component:x.component,unit:x.unit,semantic:x.semantic,validation_rule:block.validation_rule_id,engine_index,input_range:range});
   }
  }
  if(inputs.length>256||inputs.length!==layout.control_size)throw Error('Invalid command size');
- const description=freeze({group_id:authority.group_id,control_stride:layout.control_stride,inputs});const rows:any[]=[];let prior=previous??null,last:any=null,unknown=false;
+ const description=freeze({group_id:authority.group_id,control_stride:layout.control_stride,limit_stage:'host-control-input-range',inputs});const rows:any[]=[];let prior=previous??null,last:any=null,unknown=false;
  function capture(receipt:unknown,group:unknown){
   if(unknown||rows.length>=count)throw Error('Command batch closed');
   const row=projectCommandBoundary(receipt,group,layout,prior??undefined);

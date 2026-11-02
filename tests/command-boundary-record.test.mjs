@@ -36,7 +36,7 @@ test('held request provenance cannot be forged by passing a copied or modified p
 test('whole multi-input blocks use their actual engine indices without exposing another group',()=>{
  const identity={session_id:'s',project_revision:'a'.repeat(64),run_epoch:0},lease={group_id:'arm',owner_id:'owner',generation:1,control_stride:1};
  const group={lease,accepted_sequence:1,last_control_tick:0,fresh_at_tick:null};
- const layout={group_id:'arm',control_stride:1,control_size:2,blocks:[{actuator_name:'motor',engine_indices:[2,0],inputs:[{actuator_name:'motor',component:0,unit:'N',semantic:'first',input_range:[-1,1]},{actuator_name:'motor',component:1,unit:'N',semantic:'second',input_range:null}]}]};
+ const layout={group_id:'arm',control_stride:1,control_size:2,blocks:[{actuator_name:'motor',validation_rule_id:'independent-scalar-ranges',engine_indices:[2,0],inputs:[{actuator_name:'motor',component:0,unit:'N',semantic:'first',input_range:[-1,1]},{actuator_name:'motor',component:1,unit:'N',semantic:'second',input_range:null}]}]};
  const receipt={identity,boundary_tick:0,status:'integrated',plant_before:{tick:0},plant_after:{tick:1},committed_control:[2,99,1],commits:[{group_id:'arm',owner_id:'owner',lease_generation:1,sequence:1,requested:[5,2],committed:[1,2],clipped:[true,false]}],held_group_ids:['other']};
  const row=projectCommandBoundary(receipt,group,layout);assert.deepEqual(row.inputs.map(x=>x.engine_index),[2,0]);assert.deepEqual(row.inputs.map(x=>x.applied),[1,2]);assert.deepEqual(row.inputs.map(x=>x.requested),[5,2]);assert.equal(JSON.stringify(row).includes('99'),false);
 });

@@ -5,7 +5,7 @@ const sameIdentity=(a:any,b:any)=>!!a&&!!b&&a.session_id===b.session_id&&a.proje
 const projectedRecords=new WeakSet<object>();
 export function isProjectedCommandBoundary(value:unknown):boolean{return !!value&&typeof value==='object'&&projectedRecords.has(value as object);}
 const identityKeys=['session_id','project_revision','run_epoch'];
-const inputKeys=['actuator_name','component','unit','semantic','engine_index','input_range','requested','applied','limited'];
+const inputKeys=['actuator_name','component','unit','semantic','validation_rule','engine_index','input_range','requested','applied','limited'];
 const recordKeys=['identity','boundary_tick','outcome','group_id','lease_generation','sequence','source','request_tick','inputs'];
 const finite=(v:any)=>typeof v==='number'&&Number.isFinite(v);
 const equalRange=(a:any,b:any)=>a===null&&b===null||Array.isArray(a)&&Array.isArray(b)&&a.length===2&&b.length===2&&Object.is(a[0],b[0])&&Object.is(a[1],b[1]);
@@ -25,12 +25,12 @@ export function projectCommandBoundary(receipt:unknown,groupState:unknown,compil
     !layout||layout.group_id!==lease.group_id||layout.control_stride!==lease.control_stride||!Array.isArray(layout.blocks)||!layout.blocks.length)throw Error('Invalid command boundary');
  const inputDefs:any[]=[],indices=new Set<number>();
  for(const block of layout.blocks){
-  if(!block||typeof block.actuator_name!=='string'||!block.actuator_name||!Array.isArray(block.engine_indices)||!Array.isArray(block.inputs)||!block.inputs.length||block.inputs.length!==block.engine_indices.length)throw Error('Invalid command layout');
+  if(!block||block.validation_rule_id!=='independent-scalar-ranges'||typeof block.actuator_name!=='string'||!block.actuator_name||!Array.isArray(block.engine_indices)||!Array.isArray(block.inputs)||!block.inputs.length||block.inputs.length!==block.engine_indices.length)throw Error('Invalid command layout');
   for(let i=0;i<block.inputs.length;i++){
    const d=block.inputs[i],index=block.engine_indices[i],range=d?.input_range;
    if(!Number.isSafeInteger(index)||index<0||index>=r.committed_control.length||indices.has(index)||!d||d.actuator_name!==block.actuator_name||!Number.isSafeInteger(d.component)||d.component<0||typeof d.unit!=='string'||!d.unit||typeof d.semantic!=='string'||!d.semantic||
       !(range===null||Array.isArray(range)&&range.length===2&&range.every(finite)&&range[0]<=range[1]))throw Error('Invalid command input');
-   indices.add(index);inputDefs.push({actuator_name:d.actuator_name,component:d.component,unit:d.unit,semantic:d.semantic,engine_index:index,input_range:range===null?null:[...range]});
+   indices.add(index);inputDefs.push({actuator_name:d.actuator_name,component:d.component,unit:d.unit,semantic:d.semantic,validation_rule:block.validation_rule_id,engine_index:index,input_range:range===null?null:[...range]});
   }
  }
  if(inputDefs.length>256||inputDefs.length!==layout.control_size)throw Error('Invalid command size');
@@ -58,7 +58,7 @@ export function projectCommandBoundary(receipt:unknown,groupState:unknown,compil
    if(prior.sequence!==g.accepted_sequence||prior.request_tick!==requestTick)throw Error('Held command origin changed');
    for(let i=0;i<inputDefs.length;i++){
     const d=inputDefs[i],old=prior.inputs[i],applied=r.committed_control[d.engine_index];
-    if(!exact(old,inputKeys)||old.actuator_name!==d.actuator_name||old.component!==d.component||old.unit!==d.unit||old.semantic!==d.semantic||old.engine_index!==d.engine_index||!equalRange(old.input_range,d.input_range)||!Object.is(old.applied,applied)||
+    if(!exact(old,inputKeys)||old.actuator_name!==d.actuator_name||old.component!==d.component||old.unit!==d.unit||old.semantic!==d.semantic||old.validation_rule!==d.validation_rule||old.engine_index!==d.engine_index||!equalRange(old.input_range,d.input_range)||!Object.is(old.applied,applied)||
        !((old.requested===null&&old.limited===null)||(finite(old.requested)&&typeof old.limited==='boolean'&&old.limited===(old.requested!==old.applied))))throw Error('Invalid held command evidence');
     if(old.requested!==null){const range=d.input_range,want=old.requested,expected=range===null?want:want<range[0]?range[0]:want>range[1]?range[1]:want;if(!Object.is(expected,applied))throw Error('Invalid held command limiting');}
     requested[i]=old.requested;limited[i]=old.limited;

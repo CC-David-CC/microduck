@@ -3,7 +3,7 @@ import {createCommandBatchRecorder} from '../foundation/implementation/src/exper
 import {validateCommandBatch} from '../foundation/implementation/src/experiments/command-batch-validation.ts';
 const identity={session_id:'s',project_revision:'a'.repeat(64),run_epoch:0},authority={...identity,group_id:'arm',lease_generation:1};
 const lease={group_id:'arm',owner_id:'owner',generation:1,control_stride:2};
-const layout={group_id:'arm',control_stride:2,control_size:2,blocks:[{actuator_name:'motor',engine_indices:[2,0],inputs:[{actuator_name:'motor',component:0,unit:'N',semantic:'first',input_range:[-1,1]},{actuator_name:'motor',component:1,unit:'N',semantic:'second',input_range:null}]}]};
+const layout={group_id:'arm',control_stride:2,control_size:2,blocks:[{actuator_name:'motor',validation_rule_id:'independent-scalar-ranges',engine_indices:[2,0],inputs:[{actuator_name:'motor',component:0,unit:'N',semantic:'first',input_range:[-1,1]},{actuator_name:'motor',component:1,unit:'N',semantic:'second',input_range:null}]}]};
 const initial={lease,accepted_sequence:0,last_control_tick:null,fresh_at_tick:null};
 const after={lease,accepted_sequence:2,last_control_tick:2,fresh_at_tick:null};
 const request={authority,attempt_token:'run',start_tick:0,steps:3};

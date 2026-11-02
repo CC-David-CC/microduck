@@ -6,8 +6,9 @@ import {createControlledProjectWorldManager, ResetFault, InspectionFault, Operat
 import {copyBounded, sameBoundedData} from './project-world-wire.ts';
 import {channelStepBudget} from '../experiments/channel-step-budget.ts';
 import {commandBatchBudget} from '../experiments/command-batch-budget.ts';
+import {createCommandBatchRecorder} from '../experiments/command-batch-record.ts';
 import {commandGroupLayout} from '../experiments/command-group-layout.ts';
-import {microduckTruthDefinitionHash} from '../observations/microduck-truth-channel.ts';
+import {microduckTruthDefinitionHash,encodeMicroduckTruthDefinition} from '../observations/microduck-truth-channel.ts';
 import {validateTrustedRecordingPolicy} from './trusted-recording-policy.ts';
 import {createDisplayRenderer} from '../display/three-display.ts';
 import {createAttributedDisplayRenderer} from '../display/three-attributed-display.ts';
@@ -383,13 +384,21 @@ function makeHost(manager: any, identity: any, budget: number, assetNotices: rea
     const declaration = Object.freeze({project_revision:evidence.project_revision, configuration_sha256:evidence.configuration_sha256,
       runtime_lock_sha256:evidence.runtime_lock_sha256});
     const identity = freezeData(copyBounded(current, budget));
-    let effectiveBatchSize=batchSize;
+    let effectiveBatchSize=batchSize,commandDescription:any=null;
     if(channelPolicy) {
       // Bound against worst-case numeric identifiers and the current authority;
       // the manager and Worker independently recheck the actual message.
       effectiveBatchSize=Math.min(batchSize,channelPolicy.max_entries);
       const authority={...identity,group_id:recording.group_id,lease_generation:Number.MAX_SAFE_INTEGER,
         channel_id:recording.channel_id,definition_sha256:recording.definition_sha256};
+      const commandAuthority={...identity,group_id:recording.group_id,lease_generation:1};
+      commandDescription=createCommandBatchRecorder(commandAuthority,channelPolicy.command_layout,0,1).snapshot().layout;
+      const utf8=(value:unknown)=>new TextEncoder().encode(JSON.stringify(value)).length;
+      const definitionBytes=channelPolicy.definition ? utf8(encodeMicroduckTruthDefinition(channelPolicy.definition)) : 0;
+      const channelBytes=utf8(channelPolicy.channel),layoutBytes=utf8(encodeMicroduckTruthDefinition(commandDescription));
+      const measurementBound=16384+channelBytes+definitionBytes+requested*(160+26*channelPolicy.channel.size);
+      const recordBound=32768+channelBytes+definitionBytes+layoutBytes+requested*(512+26*channelPolicy.channel.size+60*commandDescription.inputs.length);
+      if(measurementBound>524288||recordBound>1048576)throw Error('Attempt exceeds saved-record budget');
       while(effectiveBatchSize>0) {
         try {channelStepBudget({request_id:'00000000-0000-4000-8000-000000000000',generation:Number.MAX_SAFE_INTEGER,
           command_sequence:Number.MAX_SAFE_INTEGER,identity,start_tick:requested-1,steps:effectiveBatchSize,
@@ -408,10 +417,10 @@ function makeHost(manager: any, identity: any, budget: number, assetNotices: rea
       let status: 'completed'|'cancelled'|'deadline'|'failed'|'unknown' = 'failed';
       let verified: number | null = null, reported: number | null = null;
       let primary: unknown, hasPrimary = false, operationError: unknown, hasOperationError = false;
-      const entries:any[]=[]; let authority:any=null;
+      const entries:any[]=[],commandEntries:any[]=[]; let authority:any=null,commandAuthority:any=null;
       try {
         try { lease = await acquisition; }
-        catch { return freezeData({status, identity, configuration_evidence:declaration, requested_ticks:requested, last_verified_tick:verified, reported_steps:reported,...(recording ? {measurement:{authority:null,entries:[],complete:false,...(channelPolicy ? {channel:channelPolicy.channel,...(channelPolicy.definition ? {definition:channelPolicy.definition} : {})} : {})}} : {})}); }
+        catch { return freezeData({status, identity, configuration_evidence:declaration, requested_ticks:requested, last_verified_tick:verified, reported_steps:reported,...(recording ? {measurement:{authority:null,entries:[],complete:false,...(channelPolicy ? {channel:channelPolicy.channel,...(channelPolicy.definition ? {definition:channelPolicy.definition} : {})} : {})},...(channelPolicy ? {commands:{authority:null,layout:commandDescription,entries:[],complete:false}} : {})} : {})}); }
         try {
           let first: any;
           try { first = await inspect(); }
@@ -447,6 +456,14 @@ function makeHost(manager: any, identity: any, budget: number, assetNotices: rea
                     log.sealed!==false || log.complete!==false || log.entries.some((entry:any,index:number)=>entry?.observed_tick!==verified!+index || entry?.outcome!=='completed')) {
                   status='unknown'; break;
                 }
+                if(channelPolicy){
+                  const c=response.commands,ca=c?.authority;
+                  if(!ca||!sameIdentity(ca,identity)||ca.group_id!==recording.group_id||ca.lease_generation!==a.lease_generation||
+                     (commandAuthority&&ca.lease_generation!==commandAuthority.lease_generation)||!sameBoundedData(c.layout,commandDescription)||
+                     c.start_tick!==verified||c.requested_count!==steps||c.complete!==true||!Array.isArray(c.rows)||c.rows.length!==steps||
+                     c.rows.some((row:any,index:number)=>row?.boundary_tick!==verified!+index||row?.outcome!=='completed')){status='unknown';break;}
+                  commandAuthority=copyBounded(ca,budget);commandEntries.push(...copyBounded(c.rows,budget));
+                }
                 authority=copyBounded(a,budget);
                 entries.push(...copyBounded(log.entries,budget));
               }
@@ -467,7 +484,7 @@ function makeHost(manager: any, identity: any, budget: number, assetNotices: rea
       }
       if (hasPrimary) throw primary;
       return freezeData({status, identity, configuration_evidence:declaration, requested_ticks:requested, last_verified_tick:verified, reported_steps:reported,
-        ...(recording ? {measurement:{authority,entries,complete:status==='completed' && entries.length===requested,...(channelPolicy ? {channel:channelPolicy.channel,...(channelPolicy.definition ? {definition:channelPolicy.definition} : {})} : {})}} : {})});
+        ...(recording ? {measurement:{authority,entries,complete:status==='completed' && entries.length===requested,...(channelPolicy ? {channel:channelPolicy.channel,...(channelPolicy.definition ? {definition:channelPolicy.definition} : {})} : {})},...(channelPolicy ? {commands:{authority:commandAuthority,layout:commandDescription,entries:commandEntries,complete:status==='completed' && commandEntries.length===requested}} : {})} : {})});
     })();
     return Object.freeze({result, cancel() {cancelled = true; return result.then(() => undefined);}});
   }

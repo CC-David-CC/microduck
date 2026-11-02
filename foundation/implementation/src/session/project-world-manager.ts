@@ -854,7 +854,7 @@ function createManager(input: Policy, controlled?: ControlledPolicy) {
         if (attempt.status !== 'admitting' || candidate !== attempt || disposed) return;
         if (performance.now() >= attempt.deadline) return candidateFailure(attempt, 'Candidate deadline exceeded');
         attempt.closure = new Set(Object.keys(expected.files));
-        const worker = new Worker(new URL('./project-world-worker.ts', import.meta.url), {type:'module'});
+        const worker = new Worker(new URL('./workers/world.mjs', import.meta.url), {type:'module'});
         attempt.worker = worker; attempt.status = 'staging';
         worker.addEventListener('message', attempt.message);
         worker.addEventListener('error', attempt.error);

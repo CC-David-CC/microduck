@@ -1,0 +1,385 @@
+{
+  "profile": {
+    "blocks": [
+      {
+        "actuator_name": "left_hip_yaw",
+        "engine_indices": [
+          0
+        ],
+        "validation_rule_id": "independent-scalar-ranges",
+        "inputs": [
+          {
+            "actuator_name": "left_hip_yaw",
+            "component": 0,
+            "unit": "rad",
+            "semantic": "joint position target",
+            "input_range": [
+              -10.0,
+              10.0
+            ]
+          }
+        ]
+      },
+      {
+        "actuator_name": "left_hip_roll",
+        "engine_indices": [
+          1
+        ],
+        "validation_rule_id": "independent-scalar-ranges",
+        "inputs": [
+          {
+            "actuator_name": "left_hip_roll",
+            "component": 0,
+            "unit": "rad",
+            "semantic": "joint position target",
+            "input_range": [
+              -10.0,
+              10.0
+            ]
+          }
+        ]
+      },
+      {
+        "actuator_name": "left_hip_pitch",
+        "engine_indices": [
+          2
+        ],
+        "validation_rule_id": "independent-scalar-ranges",
+        "inputs": [
+          {
+            "actuator_name": "left_hip_pitch",
+            "component": 0,
+            "unit": "rad",
+            "semantic": "joint position target",
+            "input_range": [
+              -10.0,
+              10.0
+            ]
+          }
+        ]
+      },
+      {
+        "actuator_name": "left_knee",
+        "engine_indices": [
+          3
+        ],
+        "validation_rule_id": "independent-scalar-ranges",
+        "inputs": [
+          {
+            "actuator_name": "left_knee",
+            "component": 0,
+            "unit": "rad",
+            "semantic": "joint position target",
+            "input_range": [
+              -10.0,
+              10.0
+            ]
+          }
+        ]
+      },
+      {
+        "actuator_name": "left_ankle",
+        "engine_indices": [
+          4
+        ],
+        "validation_rule_id": "independent-scalar-ranges",
+        "inputs": [
+          {
+            "actuator_name": "left_ankle",
+            "component": 0,
+            "unit": "rad",
+            "semantic": "joint position target",
+            "input_range": [
+              -10.0,
+              10.0
+            ]
+          }
+        ]
+      },
+      {
+        "actuator_name": "neck_pitch",
+        "engine_indices": [
+          5
+        ],
+        "validation_rule_id": "independent-scalar-ranges",
+        "inputs": [
+          {
+            "actuator_name": "neck_pitch",
+            "component": 0,
+            "unit": "rad",
+            "semantic": "joint position target",
+            "input_range": [
+              -10.0,
+              10.0
+            ]
+          }
+        ]
+      },
+      {
+        "actuator_name": "head_pitch",
+        "engine_indices": [
+          6
+        ],
+        "validation_rule_id": "independent-scalar-ranges",
+        "inputs": [
+          {
+            "actuator_name": "head_pitch",
+            "component": 0,
+            "unit": "rad",
+            "semantic": "joint position target",
+            "input_range": [
+              -10.0,
+              10.0
+            ]
+          }
+        ]
+      },
+      {
+        "actuator_name": "head_yaw",
+        "engine_indices": [
+          7
+        ],
+        "validation_rule_id": "independent-scalar-ranges",
+        "inputs": [
+          {
+            "actuator_name": "head_yaw",
+            "component": 0,
+            "unit": "rad",
+            "semantic": "joint position target",
+            "input_range": [
+              -10.0,
+              10.0
+            ]
+          }
+        ]
+      },
+      {
+        "actuator_name": "head_roll",
+        "engine_indices": [
+          8
+        ],
+        "validation_rule_id": "independent-scalar-ranges",
+        "inputs": [
+          {
+            "actuator_name": "head_roll",
+            "component": 0,
+            "unit": "rad",
+            "semantic": "joint position target",
+            "input_range": [
+              -10.0,
+              10.0
+            ]
+          }
+        ]
+      },
+      {
+        "actuator_name": "right_hip_yaw",
+        "engine_indices": [
+          9
+        ],
+        "validation_rule_id": "independent-scalar-ranges",
+        "inputs": [
+          {
+            "actuator_name": "right_hip_yaw",
+            "component": 0,
+            "unit": "rad",
+            "semantic": "joint position target",
+            "input_range": [
+              -10.0,
+              10.0
+            ]
+          }
+        ]
+      },
+      {
+        "actuator_name": "right_hip_roll",
+        "engine_indices": [
+          10
+        ],
+        "validation_rule_id": "independent-scalar-ranges",
+        "inputs": [
+          {
+            "actuator_name": "right_hip_roll",
+            "component": 0,
+            "unit": "rad",
+            "semantic": "joint position target",
+            "input_range": [
+              -10.0,
+              10.0
+            ]
+          }
+        ]
+      },
+      {
+        "actuator_name": "right_hip_pitch",
+        "engine_indices": [
+          11
+        ],
+        "validation_rule_id": "independent-scalar-ranges",
+        "inputs": [
+          {
+            "actuator_name": "right_hip_pitch",
+            "component": 0,
+            "unit": "rad",
+            "semantic": "joint position target",
+            "input_range": [
+              -10.0,
+              10.0
+            ]
+          }
+        ]
+      },
+      {
+        "actuator_name": "right_knee",
+        "engine_indices": [
+          12
+        ],
+        "validation_rule_id": "independent-scalar-ranges",
+        "inputs": [
+          {
+            "actuator_name": "right_knee",
+            "component": 0,
+            "unit": "rad",
+            "semantic": "joint position target",
+            "input_range": [
+              -10.0,
+              10.0
+            ]
+          }
+        ]
+      },
+      {
+        "actuator_name": "right_ankle",
+        "engine_indices": [
+          13
+        ],
+        "validation_rule_id": "independent-scalar-ranges",
+        "inputs": [
+          {
+            "actuator_name": "right_ankle",
+            "component": 0,
+            "unit": "rad",
+            "semantic": "joint position target",
+            "input_range": [
+              -10.0,
+              10.0
+            ]
+          }
+        ]
+      }
+    ],
+    "groups": [
+      {
+        "group_id": "all",
+        "control_stride": 4,
+        "actuator_names": [
+          "left_hip_yaw",
+          "left_hip_roll",
+          "left_hip_pitch",
+          "left_knee",
+          "left_ankle",
+          "neck_pitch",
+          "head_pitch",
+          "head_yaw",
+          "head_roll",
+          "right_hip_yaw",
+          "right_hip_roll",
+          "right_hip_pitch",
+          "right_knee",
+          "right_ankle"
+        ]
+      }
+    ],
+    "microduck_truth": {
+      "sensor_name": "imu_ang_vel",
+      "body_name": "trunk_base",
+      "joint_names": [
+        "left_hip_yaw",
+        "left_hip_roll",
+        "left_hip_pitch",
+        "left_knee",
+        "left_ankle",
+        "neck_pitch",
+        "head_pitch",
+        "head_yaw",
+        "head_roll",
+        "right_hip_yaw",
+        "right_hip_roll",
+        "right_hip_pitch",
+        "right_knee",
+        "right_ankle"
+      ],
+      "channel_id": "microduck.truth"
+    }
+  },
+  "controllers": [
+    {
+      "group_id": "all",
+      "source_path": "controllers/microduck-policy.mjs",
+      "parameters": {},
+      "intent": {
+        "speed": 0
+      },
+      "grants": [
+        {
+          "channel_id": "microduck.truth",
+          "definition_sha256": "9037a0e53707dd3e3b957d45c57553f2c4f9f82950b6182a596341b808313e3a"
+        }
+      ]
+    }
+  ],
+  "policy": {
+    "inventoryLimits": {
+      "max_files": 128,
+      "max_total_bytes": 33554432,
+      "max_file_bytes": 8388608,
+      "max_manifest_bytes": 262144,
+      "max_manifest_depth": 16
+    },
+    "compileLimits": {
+      "closure": {
+        "max_files": 128,
+        "max_total_bytes": 33554432,
+        "max_references": 8192,
+        "max_include_depth": 32,
+        "scan": {
+          "max_xml_bytes": 2097152,
+          "max_depth": 64,
+          "max_elements": 100000,
+          "max_attributes_per_element": 64,
+          "max_attribute_utf16": 8192,
+          "max_references": 8192
+        }
+      },
+      "assets": {
+        "max_obj_bytes": 8388608,
+        "max_obj_line_bytes": 8192,
+        "max_obj_vertices": 1000000,
+        "max_obj_faces": 1000000,
+        "max_obj_triangles": 2000000,
+        "max_obj_abs_coordinate": 1000000,
+        "max_png_bytes": 8388608,
+        "max_png_width": 2048,
+        "max_png_height": 2048,
+        "max_png_pixels": 4194304,
+        "max_png_decoded_bytes": 16777216,
+        "max_png_chunks": 128
+      },
+      "audit": {
+        "max_records": 2000,
+        "max_bytes": 1048576
+      }
+    },
+    "timeoutMs": 60000,
+    "maxReplyBytes": 1048576,
+    "frameTimeoutMs": 3000,
+    "approvedGrants": [
+      {
+        "group_id": "all",
+        "channel_id": "microduck.truth",
+        "definition_sha256": "9037a0e53707dd3e3b957d45c57553f2c4f9f82950b6182a596341b808313e3a"
+      }
+    ],
+    "approvedRecordingGrants": []
+  }
+}

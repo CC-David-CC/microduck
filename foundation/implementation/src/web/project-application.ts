@@ -82,7 +82,7 @@ export function mountProjectApplication(options: {root: HTMLElement; chooseDirec
   container.append(inspectRoot,start,close,status,activeSource,runnerRoot,shellRoot);
   let inspector: ReturnType<typeof mountProjectInspector> | null = null;
   let active: Run | null = null, disposed = false, failed = false, disposal: Promise<void> | null = null;
-  let overview:Goal|null = null;
+  let overview:Goal|null = null, autoAttempt:number|null = null;
   function syncGoal() {
     const run=active, shell=run?.shell, session=run?.session;
     if(disposed || !run || run.cancelled || run.phase!=='published' || !shell || !session) return;
@@ -113,6 +113,10 @@ export function mountProjectApplication(options: {root: HTMLElement; chooseDirec
     }
     syncGoal();
     if(!disposed)update();
+    if(event.kind==='selected' && autoAttempt===event.attempt) {
+      autoAttempt=null;
+      queueMicrotask(()=>{if(!disposed && !failed && !active && inspector?.selectedProject===inventory)startRun();});
+    }
   }
   function update() {
     if (disposed) return;
@@ -275,5 +279,9 @@ export function mountProjectApplication(options: {root: HTMLElement; chooseDirec
     }).then(resolve,reject);
     return disposal;
   }
-  return Object.freeze({dispose});
+  function openFile(file:File):void {
+    if(disposed || failed || active || !inspector || !resolveTrusted)throw Error('Project application unavailable');
+    autoAttempt=inspector.selectFile(file);
+  }
+  return Object.freeze({openFile,dispose});
 }

@@ -1,0 +1,40 @@
+{
+  "assets": [
+    "node_modules/@mujoco/mujoco/mujoco.wasm"
+  ],
+  "workers": {
+    "world": "foundation/implementation/src/session/project-world-worker.ts"
+  },
+  "patches": [
+    {
+      "path": "node_modules/@mujoco/mujoco/mujoco.js",
+      "sha256": "694ad7aec441f15507f4392d3fac186d9f6e1e31de60fb6492f3fffab3989e29",
+      "find": "await import('module')",
+      "replace": "(()=>{throw new Error('Node runtime is not available in the browser')})()"
+    },
+    {
+      "path": "node_modules/@mujoco/mujoco/mujoco.js",
+      "sha256": "694ad7aec441f15507f4392d3fac186d9f6e1e31de60fb6492f3fffab3989e29",
+      "find": "require('fs')",
+      "replace": "(()=>{throw new Error('Node runtime is not available in the browser')})()"
+    },
+    {
+      "path": "node_modules/@mujoco/mujoco/mujoco.js",
+      "sha256": "694ad7aec441f15507f4392d3fac186d9f6e1e31de60fb6492f3fffab3989e29",
+      "find": "require('path')",
+      "replace": "(()=>{throw new Error('Node runtime is not available in the browser')})()"
+    },
+    {
+      "path": "node_modules/@mujoco/mujoco/mujoco.js",
+      "sha256": "694ad7aec441f15507f4392d3fac186d9f6e1e31de60fb6492f3fffab3989e29",
+      "find": "require('url')",
+      "replace": "(()=>{throw new Error('Node runtime is not available in the browser')})()"
+    },
+    {
+      "path": "node_modules/@mujoco/mujoco/mujoco.js",
+      "sha256": "694ad7aec441f15507f4392d3fac186d9f6e1e31de60fb6492f3fffab3989e29",
+      "find": "require('crypto')",
+      "replace": "(()=>{throw new Error('Node runtime is not available in the browser')})()"
+    }
+  ]
+}

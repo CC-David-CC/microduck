@@ -169,16 +169,21 @@ export function mountProjectInspector({root,chooseDirectory,folderLimits,invento
       finally{activeDecodes--;const next=queuedFile;queuedFile=null;if(next&&!disposed&&next.token===generation)decodeFile(next.file,next.token);}
     })();
   }
+  const selectFile=(file:File):number=>{
+    if(disposed || !(file instanceof File))throw Error('Project file unavailable');
+    const token=++generation;selected=null;loadedRecords=[];syncExport();queuedOverview=null;overview.textContent='No project overview yet.';savedRecords.textContent='No saved records selected.';
+    try{onSelectionCleared?.()}catch{}
+    if(disposed||token!==generation)throw Error('Project selection changed');
+    try{onChoice?.(token)}catch{}
+    if(disposed||token!==generation)throw Error('Project selection changed');
+    acquisition?.abort();acquisition=null;status.textContent='Inspecting saved project file…';
+    decodeFile(file,token);
+    return token;
+  };
   const onFile=()=>{
     if(disposed)return;
     const file=fileInput.files?.[0];fileInput.value='';if(!file)return;
-    const token=++generation;selected=null;loadedRecords=[];syncExport();queuedOverview=null;overview.textContent='No project overview yet.';savedRecords.textContent='No saved records selected.';
-    try{onSelectionCleared?.()}catch{}
-    if(disposed||token!==generation)return;
-    try{onChoice?.(token)}catch{}
-    if(disposed||token!==generation)return;
-    acquisition?.abort();acquisition=null;status.textContent='Inspecting saved project file…';
-    decodeFile(file,token);
+    try{selectFile(file)}catch{if(!disposed)status.textContent='Unable to inspect saved project file.';}
   };
   const onExport=()=>{
     if(disposed||exportActive||!selected)return;
@@ -199,7 +204,7 @@ export function mountProjectInspector({root,chooseDirectory,folderLimits,invento
   fileInput.addEventListener('change',onFile);
   button.addEventListener('click',onChoose);
   try {root.appendChild(container);} catch(error) {button.removeEventListener('click',onChoose);fileInput.removeEventListener('change',onFile);container.remove();throw error;}
-  return Object.freeze({get selectedProject(){return selected;},dispose(){
+  return Object.freeze({get selectedProject(){return selected;},selectFile,dispose(){
     if (disposed) return;
     disposed=true;generation++;queuedOverview=null;queuedFile=null;loadedRecords=[];for(const url of exportUrls)URL.revokeObjectURL(url);exportUrls.clear();exportButton.removeEventListener('click',onExport);acquisition?.abort();button.removeEventListener('click',onChoose);fileInput.removeEventListener('change',onFile);container.remove();
   }});

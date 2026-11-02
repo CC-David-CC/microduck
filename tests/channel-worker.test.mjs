@@ -2,6 +2,7 @@ import test from 'node:test';import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';import {execFile} from 'node:child_process';import {promisify} from 'node:util';
 import {MessageChannel} from 'node:worker_threads';import {setTimeout as delay} from 'node:timers/promises';
 import {validateChannelStepResponse} from '../foundation/implementation/src/experiments/measured-step-response.ts';
+import {validateCommandBatch} from '../foundation/implementation/src/experiments/command-batch-validation.ts';
 const path=process.env.MICRODUCK_BUILTIN_PROJECT;if(!path)throw Error('MICRODUCK_BUILTIN_PROJECT required');
 const fixture=JSON.parse(await readFile(path)),profile=JSON.parse(await readFile(new URL('../microduck-profile.json',import.meta.url)));
 const report=JSON.parse((await promisify(execFile)(process.execPath,[new URL('../tools/inspect-builtin-channel.mjs',import.meta.url).pathname],{env:process.env})).stdout);
@@ -64,6 +65,11 @@ test('combined worker recording carries real commands across batches with held p
  s.emit({...step(s,'combined-2',3),kind:'step-recorded',command_sequence:2});const second=await until(()=>s.received.find(x=>x.request_id==='combined-2'));
  assert.equal(second.kind,'stepped',JSON.stringify(second));assert.equal(second.command_batch.rows[0].source,'held');assert.equal(second.command_batch.rows[0].request_tick,4);assert.equal(second.command_batch.rows[0].requested[0],20);assert.equal(second.command_batch.rows[0].limited[0],true);
  assert.deepEqual(second.command_batch.layout,first.command_batch.layout);assert.equal(second.inspection.plant.tick,8);
+ const g=profile.profile.groups[0],blocks=g.actuator_names.map(name=>profile.profile.blocks.find(x=>x.actuator_name===name)),layout={group_id:g.group_id,control_stride:g.control_stride,control_size:blocks.reduce((n,b)=>n+b.inputs.length,0),blocks};
+ const authority={...s.ready.identity,group_id:'all',lease_generation:s.authority.lease_generation};
+ const validated=validateCommandBatch({authority,attempt_token:'attempt',start_tick:0,steps:5},layout,s.ready.inspection.commands.groups[0],s.ready.inspection.commands.control,first.inspection.commands.groups[0],first.inspection.commands.control,first.command_batch);
+ const continued=validateCommandBatch({authority,attempt_token:'attempt',start_tick:5,steps:3},layout,first.inspection.commands.groups[0],first.inspection.commands.control,second.inspection.commands.groups[0],second.inspection.commands.control,second.command_batch,validated.continuation);
+ assert.equal(continued.batch.rows[0].requested[0],20);assert.equal(continued.batch.rows[0].limited[0],true);
 });
 test('combined recording explicitly marks a controller failure as unknown without invented values',async t=>{
  const s=await start(t,4);s.emit({...step(s,'combined-failure',8),kind:'step-recorded'});const reply=await until(()=>s.received.find(x=>x.request_id==='combined-failure'));

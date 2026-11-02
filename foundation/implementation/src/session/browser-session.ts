@@ -5,6 +5,8 @@ import {safeProjectPath} from '../projects/project-path.ts';
 import {createControlledProjectWorldManager, ResetFault, InspectionFault, OperationBusy, StepFault} from './project-world-manager.ts';
 import {copyBounded, sameBoundedData} from './project-world-wire.ts';
 import {channelStepBudget} from '../experiments/channel-step-budget.ts';
+import {commandBatchBudget} from '../experiments/command-batch-budget.ts';
+import {commandGroupLayout} from '../experiments/command-group-layout.ts';
 import {microduckTruthDefinitionHash} from '../observations/microduck-truth-channel.ts';
 import {validateTrustedRecordingPolicy} from './trusted-recording-policy.ts';
 import {createDisplayRenderer} from '../display/three-display.ts';
@@ -75,7 +77,7 @@ function validSessionVisualFacts(model:any,frame:any): boolean {
 type BrowserSession = {
   readonly identity: Readonly<{session_id: string; project_revision: string; run_epoch: number}>;
   readonly state: 'ready-paused' | 'running' | 'paused' | 'faulted' | 'disposed';
-  readonly recordingChannels: readonly {group_id:string;channel_id:string;definition_sha256:string;max_entries:number;channel?:Readonly<Record<string,unknown>>;definition?:Readonly<Record<string,unknown>>}[];
+  readonly recordingChannels: readonly {group_id:string;channel_id:string;definition_sha256:string;max_entries:number;channel?:Readonly<Record<string,unknown>>;definition?:Readonly<Record<string,unknown>>;command_layout?:Readonly<Record<string,unknown>>}[];
   readonly targets: readonly Readonly<{group_id:string;field:string;min:number;max:number}>[];
   setTarget(request:unknown):Promise<unknown>;
   targetHistory():Readonly<{entries:readonly Readonly<Record<string,unknown>>[];truncated:boolean}>;
@@ -391,7 +393,8 @@ function makeHost(manager: any, identity: any, budget: number, assetNotices: rea
       while(effectiveBatchSize>0) {
         try {channelStepBudget({request_id:'00000000-0000-4000-8000-000000000000',generation:Number.MAX_SAFE_INTEGER,
           command_sequence:Number.MAX_SAFE_INTEGER,identity,start_tick:requested-1,steps:effectiveBatchSize,
-          attempt_token:recording.attempt_token,authority},channelPolicy.channel);break;}
+          attempt_token:recording.attempt_token,authority},channelPolicy.channel);
+          commandBatchBudget({...identity,group_id:recording.group_id,lease_generation:Number.MAX_SAFE_INTEGER},channelPolicy.command_layout,requested-1,effectiveBatchSize);break;}
         catch {effectiveBatchSize--;}
       }
       if(effectiveBatchSize===0)throw Error('Recording channel exceeds response budget');
@@ -965,7 +968,7 @@ export async function createBrowserSession(input: unknown): Promise<BrowserSessi
           !row.names.every((s:unknown) => typeof s === 'string' && s.length <= 128 && /^[A-Za-z0-9_][A-Za-z0-9_-]*$/.test(s))) throw new Error('Invalid asset notices');
       seen.add(row.path);
     }
-    return makeHost(manager, promoted.identity, budget, freezeData(rows), freezeData((policy.approvedRecordingGrants??[]).map((row:any)=>({group_id:row.group_id,channel_id:row.channel_id,definition_sha256:row.definition_sha256,max_entries:row.max_entries,...(Object.hasOwn(row,'channel') ? {channel:row.channel} : {}),...(Object.hasOwn(row,'definition') ? {definition:row.definition} : {})}))),targetCatalog.targets,inventory,controllers.map((c:any)=>({group_id:c.group_id,intent:c.intent})));
+    return makeHost(manager, promoted.identity, budget, freezeData(rows), freezeData((policy.approvedRecordingGrants??[]).map((row:any)=>({group_id:row.group_id,channel_id:row.channel_id,definition_sha256:row.definition_sha256,max_entries:row.max_entries,...(Object.hasOwn(row,'channel') ? {channel:row.channel,command_layout:commandGroupLayout(profile.blocks,profile.groups,row.group_id)} : {}),...(Object.hasOwn(row,'definition') ? {definition:row.definition} : {})}))),targetCatalog.targets,inventory,controllers.map((c:any)=>({group_id:c.group_id,intent:c.intent})));
   } catch (error) {
     if (manager) { try { await manager.dispose(); } catch { /* Preserve the construction failure. */ } }
     throw error;

@@ -9,6 +9,9 @@ import {openRunnerFrame} from '../isolation/runner-host.ts';
 import {validateMeasuredStepResponse, validateChannelStepResponse} from '../experiments/measured-step-response.ts';
 import {validRecordingChannel} from '../experiments/measurement-recording-grant.ts';
 import {channelStepBudget} from '../experiments/channel-step-budget.ts';
+import {commandBatchBudget,stepEnvelopeBudget} from '../experiments/command-batch-budget.ts';
+import {commandGroupLayout} from '../experiments/command-group-layout.ts';
+import {validateCommandBatch} from '../experiments/command-batch-validation.ts';
 import {createVisualMeshTransfer} from './visual-mesh-transfer.ts';
 import {createVisualMeshAttributeTransfer} from './visual-mesh-attribute-transfer.ts';
 
@@ -37,11 +40,11 @@ type Attempt = {generation: number; requestId: string; status: 'admitting' | 'st
   revision: string; entry: string; files: Map<string, {bytes:number;sha256:string}>; closure: Set<string>; identity: any; baseline: any; promoting: boolean; pendingResolve: (value: object) => void; pendingReject: (reason: Error) => void;
   owners?: Owner[]; ownerClosures?: Map<Owner, Promise<void>>; opening?: Promise<void>; retirement?: Promise<void>; expectedGroups?: any[]; expectedBlocks?: any[]; controllers?: any[]; admittedAudit?: any; expectedNotices?: any[];
   targetSequence?: number; targetPending?: {id:string; sequence:number; group_id:string; field:string; value:number; deadline:number; timer:ReturnType<typeof setTimeout>; resolve:(value:unknown)=>void; reject:(reason:Error)=>void; completion:Promise<unknown>};
-  commandSequence?: number; visualBinding?: {identity:any; bodyCount:number};
+  commandSequence?: number; commandEvidence?:{token:string;group_id:string;lease_generation:number;tick:number;continuation:object}|null; visualBinding?: {identity:any; bodyCount:number};
   meshPrefix?: string; meshSequence?: number;
   groupPrefix?: string; groupSequence?: number;
   rawVisualPrefix?: string; rawVisualSequence?: number;
-  stepPending?: {id:string; sequence:number; steps:number; startTick:number; deadline:number; timer:ReturnType<typeof setTimeout>; resolve:(value:unknown)=>void; reject:(reason:Error)=>void; completion:Promise<unknown>; poseCount:number|null; recording:any};
+  stepPending?: {id:string; sequence:number; steps:number; startTick:number; deadline:number; timer:ReturnType<typeof setTimeout>; resolve:(value:unknown)=>void; reject:(reason:Error)=>void; completion:Promise<unknown>; poseCount:number|null; recording:any; commandPlan:any};
   resetPending?: ResetPending;
   groupPending?: {id:string; deadline:number; timer:ReturnType<typeof setTimeout>; resolve:(value:unknown)=>void; reject:(error:Error)=>void};
   cleanup?: {id:string; stage:boolean; deadline:number; timer:ReturnType<typeof setTimeout>; resolve:()=>void; reject:(reason:Error)=>void};
@@ -651,7 +654,7 @@ function createManager(input: Policy, controlled?: ControlledPolicy) {
           attempt.identity = copyBounded(msg.identity, policy.maxReplyBytes);
           attempt.baseline = copyBounded(msg.inspection, policy.maxReplyBytes);
           attempt.admittedAudit = copyBounded(msg.audit, policy.maxReplyBytes);
-          attempt.commandSequence = 0; attempt.targetSequence = 0;
+          attempt.commandSequence = 0; attempt.targetSequence = 0; attempt.commandEvidence = null;
           pending.resolve({identity:copyBounded(msg.identity, policy.maxReplyBytes)});
           return;
         }
@@ -677,21 +680,22 @@ function createManager(input: Policy, controlled?: ControlledPolicy) {
         const pending = attempt.stepPending;
         const correlated = msg.request_id === pending.id && msg.generation === attempt.generation &&
           msg.command_sequence === pending.sequence && sameIdentity(msg.identity, attempt.identity) && performance.now() < pending.deadline;
-        if (correlated && fields(msg, ['kind','request_id','generation','identity','command_sequence','steps_completed','error'], pending.recording ? ['measurement_batch'] : []) &&
+        const combined=pending.recording?.grant.purpose==='channel-recording';
+        if (correlated && fields(msg, ['kind','request_id','generation','identity','command_sequence','steps_completed','error'], pending.recording ? ['measurement_batch',...(combined?['command_batch']:[])] : []) &&
             msg.kind === 'step-error' && count(msg.steps_completed) && msg.steps_completed <= pending.steps &&
             typeof msg.error === 'string' && msg.error.length <= 2000) {
           clearTimeout(pending.timer); attempt.stepPending = undefined;
           const error = Object.assign(new StepFault('Controller step failed: ' + msg.error),
-            {steps_completed:msg.steps_completed,outcome_unknown:true,...(pending.recording ? {measurement_incomplete:true} : {})});
+            {steps_completed:msg.steps_completed,outcome_unknown:true,...(pending.recording ? {measurement_incomplete:true} : {}),...(combined ? {command_incomplete:true} : {})});
           pending.reject(error); faultActive(attempt, 'Controller step failed', error); return;
         }
-        if (!correlated || !fields(msg, ['kind','request_id','generation','identity','command_sequence','steps_completed','inspection',...(pending.recording ? ['measurement_batch'] : [])], pending.poseCount === null ? [] : ['forward_pose']) ||
+        if (!correlated || !fields(msg, ['kind','request_id','generation','identity','command_sequence','steps_completed','inspection',...(pending.recording ? ['measurement_batch'] : []),...(combined?['command_batch']:[])], pending.poseCount === null ? [] : ['forward_pose']) ||
             msg.kind !== 'stepped' || msg.steps_completed !== pending.steps ||
             !validInspection(msg.inspection, attempt.identity) || msg.inspection.plant.tick !== pending.startTick + pending.steps ||
             !validStepProgress(attempt.baseline, msg.inspection, pending.steps, attempt)) {
           faultActive(attempt, 'Invalid step result'); return;
         }
-        let measurement: unknown;
+        let measurement: unknown, commandResult:any=null;
         if (pending.recording) {
           try {
             const expected={request_id:pending.id,generation:attempt.generation,command_sequence:pending.sequence,
@@ -700,6 +704,10 @@ function createManager(input: Policy, controlled?: ControlledPolicy) {
             measurement=pending.recording.grant.purpose==='channel-recording'
               ? validateChannelStepResponse(expected,pending.recording.grant,msg.measurement_batch)
               : validateMeasuredStepResponse(expected,pending.recording.grant,msg.measurement_batch);
+            if(combined){
+              const plan=pending.commandPlan,before=attempt.baseline.commands.groups.find((row:any)=>row.lease.group_id===plan.authority.group_id),after=msg.inspection.commands.groups.find((row:any)=>row.lease.group_id===plan.authority.group_id);
+              commandResult=validateCommandBatch({authority:plan.authority,attempt_token:pending.recording.attempt_token,start_tick:pending.startTick,steps:pending.steps},plan.layout,before,attempt.baseline.commands.control,after,msg.inspection.commands.control,msg.command_batch,plan.prior);
+            }
           } catch { faultActive(attempt,'Invalid measurement batch'); return; }
         }
         clearTimeout(pending.timer); attempt.stepPending = undefined;
@@ -707,7 +715,8 @@ function createManager(input: Policy, controlled?: ControlledPolicy) {
         const result:any = {identity:copyBounded(attempt.identity, policy.maxReplyBytes),steps_completed:pending.steps,
           inspection:copyBounded(msg.inspection, policy.maxReplyBytes)};
         if (pending.recording) {
-          if (pending.recording.grant.purpose==='channel-recording') { result.measurement = (measurement as any).log; result.measurement_channel = (measurement as any).channel; }
+          if (combined) { result.measurement = (measurement as any).log; result.measurement_channel = (measurement as any).channel; result.commands=commandResult.batch;
+            attempt.commandEvidence={token:pending.recording.attempt_token,group_id:pending.commandPlan.authority.group_id,lease_generation:pending.commandPlan.authority.lease_generation,tick:pending.startTick+pending.steps-1,continuation:commandResult.continuation}; }
           else result.measurement = measurement;
         }
         if (pending.poseCount !== null) {
@@ -987,19 +996,28 @@ function createManager(input: Policy, controlled?: ControlledPolicy) {
     if (wantsPose && (!current.visualBinding || !sameIdentity(current.visualBinding.identity,current.identity))) return Promise.reject(new Error('Visual pose is not bound to this epoch'));
     const id = crypto.randomUUID(), sequence = (current.commandSequence ?? 0) + 1;
     const startTick = current.baseline.plant.tick, deadline = performance.now() + policy.timeoutMs;
+    let commandPlan:any=null;
     if (recording?.grant.purpose === 'channel-recording') {
-      try { channelStepBudget({request_id:id,generation:current.generation,command_sequence:sequence,identity:current.identity,
-        start_tick:startTick,steps:value.steps,attempt_token:recording.attempt_token,authority:recording.authority},recording.grant.channel); }
-      catch (error) { return Promise.reject(error); }
-    }
+      try {
+        const measurementBound=channelStepBudget({request_id:id,generation:current.generation,command_sequence:sequence,identity:current.identity,
+          start_tick:startTick,steps:value.steps,attempt_token:recording.attempt_token,authority:recording.authority},recording.grant.channel);
+        const authority={...current.identity,group_id:recording.authority.group_id,lease_generation:recording.authority.lease_generation};
+        const layout=commandGroupLayout(current.expectedBlocks,current.expectedGroups,authority.group_id),commandBound=commandBatchBudget(authority,layout,startTick,value.steps);
+        const envelope={kind:'stepped',request_id:id,generation:current.generation,identity:current.identity,command_sequence:sequence,steps_completed:value.steps,inspection:current.baseline};
+        const allowance=current.baseline.commands.groups.reduce((n:number,row:any)=>n+new TextEncoder().encode(JSON.stringify(row.lease.group_id)).length+1,0);
+        if(stepEnvelopeBudget(envelope)+allowance+measurementBound+commandBound+100>policy.maxReplyBytes)throw Error('Combined response exceeds budget');
+        const prior=current.commandEvidence;
+        commandPlan={authority,layout,prior:prior&&prior.token===recording.attempt_token&&prior.group_id===authority.group_id&&prior.lease_generation===authority.lease_generation&&prior.tick===startTick-1?prior.continuation:undefined};
+      } catch (error) { return Promise.reject(error); }
+    } else current.commandEvidence=null;
     current.commandSequence = sequence;
     let resolve!: (value:unknown)=>void, reject!: (reason:Error)=>void;
     const completion = new Promise<unknown>((yes, no) => { resolve = yes; reject = no; });
     const timer = setTimeout(() => {
       if (current.stepPending?.id === id) faultActive(current, 'Step deadline exceeded');
     }, policy.timeoutMs);
-    current.stepPending = {id,sequence,steps:value.steps,startTick,deadline,timer,resolve,reject,completion,poseCount:wantsPose ? current.visualBinding!.bodyCount : null,recording};
-    try { current.worker!.postMessage({kind:'step',request_id:id,generation:current.generation,
+    current.stepPending = {id,sequence,steps:value.steps,startTick,deadline,timer,resolve,reject,completion,poseCount:wantsPose ? current.visualBinding!.bodyCount : null,recording,commandPlan};
+    try { current.worker!.postMessage({kind:commandPlan?'step-recorded':'step',request_id:id,generation:current.generation,
       identity:copyBounded(current.identity, policy.maxReplyBytes),command_sequence:sequence,steps:value.steps,...(wantsPose ? {capture_forward_pose:true} : {}),...(recording ? {recording} : {})}); }
     catch { faultActive(current, 'Step dispatch failed'); }
     return completion;

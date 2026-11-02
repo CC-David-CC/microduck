@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 import {registerHooks} from 'node:module';
 import {MessageChannel, MessagePort} from 'node:worker_threads';
+import {createCommandBatchRecorder} from '../foundation/implementation/src/experiments/command-batch-record.ts';
 
 // Test-only module hook preserves the production static import; no caller can
 // inject a runner factory into the real manager.
@@ -113,14 +114,16 @@ function channelPolicy(label='active'){
 function vectorReply(wire,ready,channel=descriptor){
  const {authority,attempt_token}=wire.recording;
  const rows=Array.from({length:wire.steps},(_,i)=>({observed_tick:i,sample:{validity:'valid',values:Array.from({length:35},(_,j)=>i+j/100),sequence:i+1,capture_tick:i,available_tick:i},outcome:'completed'}));
- return stepped(wire,ready,wire.steps,{measurement_batch:{request_id:wire.request_id,generation:wire.generation,command_sequence:wire.command_sequence,identity:ready.identity,start_tick:0,steps:wire.steps,attempt_token,authority,channel,rows}});
+ const commandAuthority={...ready.identity,group_id:'arm',lease_generation:1},profile=fixture('active').profile,layout={group_id:'arm',control_stride:1,control_size:1,blocks:[profile.blocks[0]]};
+ const command_batch={...createCommandBatchRecorder(commandAuthority,layout,0,wire.steps).snapshot(),complete:true,rows:Array.from({length:wire.steps},(_,i)=>({boundary_tick:i,outcome:'completed',sequence:i+1,source:'fresh',request_tick:i,requested:[0],applied:[0],limited:[false]}))};
+ return stepped(wire,ready,wire.steps,{command_batch,measurement_batch:{request_id:wire.request_id,generation:wire.generation,command_sequence:wire.command_sequence,identity:ready.identity,start_tick:0,steps:wire.steps,attempt_token,authority,channel,rows}});
 }
 test('manager binds vector recording to trusted host policy and validates returned descriptor and samples',async()=>{
  const manager=create(channelPolicy());try{
   const a=await active(manager);const p=manager.stepMeasured({identity:a.ready.identity,steps:2,group_id:'arm',channel_id:'angle',definition_sha256:channelHash,attempt_token:'attempt'});
-  const wire=(await getPost(a.worker,'step')).data;assert.equal(wire.recording.grant.purpose,'channel-recording');assert.deepEqual(wire.recording.grant.channel,descriptor);
+  const wire=(await getPost(a.worker,'step-recorded')).data;assert.equal(wire.recording.grant.purpose,'channel-recording');assert.deepEqual(wire.recording.grant.channel,descriptor);
   a.worker.emit(vectorReply(wire,a.ready));const result=await p;
-  assert.deepEqual(result.measurement_channel,descriptor);assert.equal(result.measurement.entries.length,2);assert.equal(result.measurement.entries[1].sample.values[1],1.01);
+  assert.deepEqual(result.measurement_channel,descriptor);assert.equal(result.commands.rows.length,2);assert.equal(result.commands.rows[0].applied[0],0);assert.equal(result.measurement.entries.length,2);assert.equal(result.measurement.entries[1].sample.values[1],1.01);
  }finally{await manager.dispose();}
 });
 test('invalid channel host policy is rejected, including mismatched identity and excessive vector capacity',()=>{
@@ -131,15 +134,15 @@ test('invalid channel host policy is rejected, including mismatched identity and
 test('oversized vector batch is rejected before dispatch and a later valid batch uses the first sequence',async()=>{
  const manager=create(channelPolicy());try{
   const a=await active(manager),request={identity:a.ready.identity,steps:64,group_id:'arm',channel_id:'angle',definition_sha256:channelHash,attempt_token:'attempt'};
-  await assert.rejects(manager.stepMeasured(request),/budget/i);assert.equal(a.worker.posts.filter(x=>x.data.kind==='step').length,0);
-  const p=manager.stepMeasured({...request,steps:1});const wire=(await getPost(a.worker,'step')).data;assert.equal(wire.command_sequence,1);
+  await assert.rejects(manager.stepMeasured(request),/budget/i);assert.equal(a.worker.posts.filter(x=>x.data.kind==='step'||x.data.kind==='step-recorded').length,0);
+  const p=manager.stepMeasured({...request,steps:1});const wire=(await getPost(a.worker,'step-recorded')).data;assert.equal(wire.command_sequence,1);
   a.worker.emit(vectorReply(wire,a.ready));assert.equal((await p).steps_completed,1);
  }finally{await manager.dispose();}
 });
 test('worker descriptor substitution faults the world instead of returning mislabeled data',async()=>{
  const manager=create(channelPolicy());try{
   const a=await active(manager),p=manager.stepMeasured({identity:a.ready.identity,steps:1,group_id:'arm',channel_id:'angle',definition_sha256:channelHash,attempt_token:'attempt'}),rejected=assert.rejects(p);
-  const wire=(await getPost(a.worker,'step')).data;a.worker.emit(vectorReply(wire,a.ready,{...descriptor,kind:'measurement'}));await rejected;await assertRetired(a.worker);
+  const wire=(await getPost(a.worker,'step-recorded')).data;a.worker.emit(vectorReply(wire,a.ready,{...descriptor,kind:'measurement'}));await rejected;await assertRetired(a.worker);
  }finally{await manager.dispose().catch(()=>{});}
 });
 
@@ -148,8 +151,27 @@ test('recording authority is host-owned, snapshotted and cannot be supplied by t
  try{const a=await active(manager),request={identity:a.ready.identity,steps:1,group_id:'arm',channel_id:'angle',definition_sha256:channelHash,attempt_token:'attempt'};
   await assert.rejects(manager.stepMeasured({...request,channel:descriptor}));
   await assert.rejects(manager.stepMeasured({...request,definition_sha256:'d'.repeat(64)}));
-  assert.equal(a.worker.posts.filter(x=>x.data.kind==='step').length,0);
-  const pending=manager.stepMeasured(request),wire=(await getPost(a.worker,'step')).data;assert.equal(wire.recording.grant.channel.kind,'truth');
+  assert.equal(a.worker.posts.filter(x=>x.data.kind==='step'||x.data.kind==='step-recorded').length,0);
+  const pending=manager.stepMeasured(request),wire=(await getPost(a.worker,'step-recorded')).data;assert.equal(wire.recording.grant.channel.kind,'truth');
   a.worker.emit(vectorReply(wire,a.ready));assert.equal((await pending).measurement_channel.kind,'truth');
  }finally{await manager.dispose();}
+});
+
+test('a forged command batch faults the world instead of publishing measurements',async()=>{
+ const manager=create(channelPolicy());try{
+  const a=await active(manager),p=manager.stepMeasured({identity:a.ready.identity,steps:1,group_id:'arm',channel_id:'angle',definition_sha256:channelHash,attempt_token:'attempt'}),rejected=assert.rejects(p);
+  const wire=(await getPost(a.worker,'step-recorded')).data,reply=vectorReply(wire,a.ready);reply.command_batch.rows[0].applied[0]=1;a.worker.emit(reply);await rejected;await assertRetired(a.worker);
+ }finally{await manager.dispose().catch(()=>{});}
+});
+
+test('missing command evidence faults rather than publishing a successful composite result',async()=>{
+ const manager=create(channelPolicy());try{const a=await active(manager),p=manager.stepMeasured({identity:a.ready.identity,steps:1,group_id:'arm',channel_id:'angle',definition_sha256:channelHash,attempt_token:'attempt'}),rejected=assert.rejects(p);
+  const wire=(await getPost(a.worker,'step-recorded')).data,reply=vectorReply(wire,a.ready);delete reply.command_batch;a.worker.emit(reply);await rejected;await assertRetired(a.worker);
+ }finally{await manager.dispose().catch(()=>{})}
+});
+test('composite step failure explicitly marks command and measurement evidence incomplete',async()=>{
+ const manager=create(channelPolicy());try{const a=await active(manager),p=manager.stepMeasured({identity:a.ready.identity,steps:2,group_id:'arm',channel_id:'angle',definition_sha256:channelHash,attempt_token:'attempt'});
+  const wire=(await getPost(a.worker,'step-recorded')).data;a.worker.emit({kind:'step-error',request_id:wire.request_id,generation:wire.generation,identity:wire.identity,command_sequence:wire.command_sequence,steps_completed:1,error:'failed',measurement_batch:{},command_batch:{}});
+  await assert.rejects(p,e=>e.outcome_unknown===true&&e.measurement_incomplete===true&&e.command_incomplete===true&&e.steps_completed===1);await assertRetired(a.worker);
+ }finally{await manager.dispose().catch(()=>{})}
 });

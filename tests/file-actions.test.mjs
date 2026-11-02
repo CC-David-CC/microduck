@@ -37,3 +37,10 @@ test('canceling replacement preserves the existing file',async()=>{
  const a=createFileActions(f.host,()=>f.application,()=>true);
  assert.equal(await a.saveAs(),null);assert.equal(f.writes.length,0);
 });
+test('a session changed while writing is not reported as the current saved snapshot',async()=>{
+ const f=fixture();let finish,started;const writing=new Promise(resolve=>{started=resolve});
+ f.context.files.write=async()=>{started();return await new Promise(resolve=>{finish=resolve})};
+ const saving=createFileActions(f.host,()=>f.application,()=>true).saveAs();await writing;
+ f.setStale();finish({version:'v2',status:'pending'});
+ const result=await saving;assert.equal(result.current,false);assert.equal(result.status,'pending');
+});

@@ -64,8 +64,8 @@ export function getTrustedOpeningConfiguration(): TrustedConfiguration | null {
 
 export function mountProjectApplication(options: {root: HTMLElement; chooseDirectory: ProjectInspectorConfig['chooseDirectory'];
   folderLimits: ProjectInspectorConfig['folderLimits']; inventoryLimits: ProjectInspectorConfig['inventoryLimits'];
-  resolveTrusted: Resolver | null; onSessionPublished?:()=>void; compactPresentation?:boolean; publishedDuckAssetURL?:string}) {
-  const {root, chooseDirectory, folderLimits, inventoryLimits, resolveTrusted, onSessionPublished, compactPresentation=false, publishedDuckAssetURL} = options;
+  resolveTrusted: Resolver | null; onSessionPublished?:()=>void; onOpenFailed?:()=>void; compactPresentation?:boolean; publishedDuckAssetURL?:string}) {
+  const {root, chooseDirectory, folderLimits, inventoryLimits, resolveTrusted, onSessionPublished, onOpenFailed, compactPresentation=false, publishedDuckAssetURL} = options;
   if (!root || !root.ownerDocument || typeof root.appendChild !== 'function' ||
       typeof chooseDirectory !== 'function' || (resolveTrusted !== null && typeof resolveTrusted !== 'function')) {
     throw new Error('Invalid project application');
@@ -218,7 +218,7 @@ export function mountProjectApplication(options: {root: HTMLElement; chooseDirec
         try {onSessionPublished?.();} catch { /* A presentation observer cannot alter session admission. */ }
       } catch (error) {
         sourceError=error;
-        if (!disposed && !run.cancelled && active===run) status.textContent = 'Project start failed.';
+        if (!disposed && !run.cancelled && active===run) {status.textContent = 'Project start failed.'; try {onOpenFailed?.();} catch {}}
       } finally {run.finish();}
       if (!ok) {
         try {
@@ -237,7 +237,7 @@ export function mountProjectApplication(options: {root: HTMLElement; chooseDirec
   }
   start.addEventListener('click',startRun); close.addEventListener('click',closeRun);
   try {
-    inspector = mountProjectInspector({root:inspectRoot,chooseDirectory,folderLimits,inventoryLimits,
+    inspector = mountProjectInspector({root:inspectRoot,chooseDirectory,folderLimits,inventoryLimits,onFileFailure:()=>{try{onOpenFailed?.()}catch{}},
       onSelectionCleared:()=>{overview=null;syncGoal();update();},
       replaySavedTargets:async(inventory,content,endTick)=>{
         const run=active,session=run?.session;

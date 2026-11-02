@@ -1,0 +1,8 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {stageReplacement} from '../staged-open.mjs';
+function fixture(){let resolve,reject,disposed=0,current=true,active='old';const ready=new Promise((a,b)=>{resolve=a;reject=b});const candidate={ready,async dispose(){disposed++}};const abort=new AbortController();const run=()=>stageReplacement({createCandidate:()=>candidate,file:'selected',isCurrent:()=>current,signal:abort.signal,commit:()=>{active='new'},timeoutMs:1000});return {run,resolve,reject,abort,setCurrent:v=>{current=v},get active(){return active},get disposed(){return disposed}}}
+test('failed opening leaves the old session and cleans the candidate',async()=>{const f=fixture(),p=f.run();f.reject(Error('Malformed project'));await assert.rejects(p,/Malformed/);assert.equal(f.active,'old');assert.equal(f.disposed,1)});
+test('cancel and stale account/session leave the old session intact',async()=>{for(const method of ['abort','stale']){const f=fixture(),p=f.run();if(method==='abort')f.abort.abort();else{f.setCurrent(false);f.resolve()}await assert.rejects(p,/canceled/);assert.equal(f.active,'old');assert.equal(f.disposed,1)}});
+test('only a published current candidate replaces the existing session',async()=>{const f=fixture(),p=f.run();assert.equal(f.active,'old');f.resolve();await p;assert.equal(f.active,'new');assert.equal(f.disposed,0)});
+test('a failed commit leaves the candidate owned and disposes it',async()=>{let disposed=0;await assert.rejects(stageReplacement({file:'x',isCurrent:()=>true,createCandidate:()=>({ready:Promise.resolve(),async dispose(){disposed++}}),commit:()=>{throw Error('swap failed')}}),/swap failed/);assert.equal(disposed,1)});

@@ -4,6 +4,7 @@ import profile from './microduck-profile.json' with {type:'json'};
 import {createFileActions} from './file-actions.mjs';
 import {createDriveGrant} from './drive-grant.mjs';
 import {mountQuickDrive} from './quick-drive.mjs';
+import {stageReplacement} from './staged-open.mjs';
 
 const REVISION='0183b6ea156fbb779121ecdb9b4c0ee205cdfec652eb427c4326b1064868ac2a';
 const PROJECT_HASH='7bed18ccb5ee0da8d6939f8ce43fb4272fea35b82f357f0be4db92d28b4b63f2';
@@ -26,16 +27,18 @@ export function mount(host) {
  const grantButton=document.createElement('button'),grantStatus=document.createElement('p');
  grantButton.type='button';grantButton.textContent='Allow agent drive';grantButton.disabled=true;grantStatus.setAttribute('role','status');grantStatus.textContent='Agent drive is off.';
  files.className='microduck-files';root.className='microduck-content';files.append(save,open,fileStatus,grantButton,grantStatus);body.append(status,files,root);
- const abort=new AbortController();let disposed=false,application=null,quickDrive=null;
+ const abort=new AbortController();let disposed=false,application=null,applicationRoot=null,quickDrive=null,staged=null;
  const driveGrant=createDriveGrant(()=>application?.getDriveSession());let granted=false;const unregister=[];
  if(host.commands){unregister.push(host.commands.register({id:'set-walk-speed',description:'Request the Microduck walk speed when the person has enabled agent drive.',parameters:{type:'object',required:['speed'],properties:{speed:{type:'number',minimum:0,maximum:0.25}},additionalProperties:false}},args=>driveGrant.drive(args)));unregister.push(host.commands.register({id:'set-turn-rate',description:'Request the Microduck turn target when the person has enabled agent drive.',parameters:{type:'object',required:['turn'],properties:{turn:{type:'number',minimum:-1,maximum:1}},additionalProperties:false}},args=>driveGrant.drive(args)))}
  const resetGrant=()=>{driveGrant.revoke();granted=false;grantButton.textContent='Allow agent drive';grantStatus.textContent='Agent drive is off.';};
  grantButton.addEventListener('click',()=>{try{if(granted){resetGrant();return}driveGrant.enable();granted=true;grantButton.textContent='Turn off agent drive';grantStatus.textContent='Agent drive is on. The agent must still request a target.'}catch{resetGrant();grantStatus.textContent='Open a session before enabling agent drive.'}});
- const actions=host.storage?createFileActions(host,()=>application,()=>!disposed):null;
+ let replaceProject=async()=>{throw Error('Project is not open')};
+ const fileApplication={captureFile:()=>{if(!application)throw Error('Project is not open');return application.captureFile()},replaceFile:(file,isCurrent)=>replaceProject(file,isCurrent)};
+ const actions=host.storage?createFileActions(host,()=>fileApplication,()=>!disposed):null;
  save.disabled=!actions;open.disabled=!actions;
- save.addEventListener('click',()=>{if(!actions)return;fileStatus.textContent='Saving project...';void actions.saveAs().then(result=>{if(!disposed&&result)fileStatus.textContent=result.current?'Saved locally: '+result.path+' ('+result.status+').':'An earlier snapshot was saved; the current session has changed.'},error=>{if(!disposed)fileStatus.textContent='Save failed: '+String(error?.message||error)})});
- open.addEventListener('click',()=>{if(!actions)return;void (async()=>{try{if(typeof host.ui?.confirm!=='function')throw Error('Open confirmation unavailable');const confirmed=await host.ui.confirm('Open a saved project? Unsaved session changes will be closed.',{title:'Open Microduck project',signal:host.signal});if(!confirmed||disposed)return;fileStatus.textContent='Opening project...';const result=await actions.open();if(!disposed&&result)fileStatus.textContent='Opened '+result.path+'. Saved records are unverified.'}catch(error){if(!disposed)fileStatus.textContent='Open failed: '+String(error?.message||error)}})()});
- const stop=()=>{if(disposed)return;disposed=true;driveGrant.revoke();quickDrive?.dispose();quickDrive=null;for(const remove of unregister)remove();abort.abort();host.signal?.removeEventListener('abort',stop);if(application){const owned=application;application=null;void owned.dispose().catch(error=>console.error('Microduck cleanup failed',error))}};
+ save.addEventListener('click',()=>{if(!actions)return;fileStatus.textContent='Saving project...';void actions.saveAs().then(result=>{if(!disposed&&result)fileStatus.textContent=result.current?'Saved locally: '+result.path+' ('+result.status+'). The live simulation state is not fully saved.':'An earlier snapshot was saved; the current session has changed.'},error=>{if(!disposed)fileStatus.textContent='Save failed: '+String(error?.message||error)})});
+ open.addEventListener('click',()=>{if(!actions)return;void (async()=>{try{if(typeof host.ui?.confirm!=='function')throw Error('Open confirmation unavailable');const confirmed=await host.ui.confirm('Open a saved project? The current live simulation will close after the new project opens. Its live state is not fully saved.',{title:'Open Microduck project',signal:host.signal});if(!confirmed||disposed)return;fileStatus.textContent='Opening project...';const result=await actions.open();if(!disposed&&result)fileStatus.textContent='Opened '+result.path+'. Saved records are unverified.'}catch(error){if(!disposed)fileStatus.textContent='Open failed: '+String(error?.message||error)}})()});
+ const stop=()=>{if(disposed)return;disposed=true;driveGrant.revoke();quickDrive?.dispose();quickDrive=null;for(const remove of unregister)remove();abort.abort();if(staged){void staged.dispose().catch(error=>console.error('Microduck candidate cleanup failed',error));staged=null}host.signal?.removeEventListener('abort',stop);if(application){const owned=application;application=null;void owned.dispose().catch(error=>console.error('Microduck cleanup failed',error))}};
  host.signal?.addEventListener('abort',stop,{once:true});
  queueMicrotask(()=>{void (async()=>{
   try{
@@ -48,7 +51,19 @@ export function mount(host) {
    if(await digest(bytes)!==PROJECT_HASH)throw Error('Built-in project integrity check failed');
    if(disposed||host.signal?.aborted)return;
    const decision={project_revision:REVISION,...structuredClone(profile),runnerOrigin:origin,frameURL:origin+'/frame',policy:{...structuredClone(profile.policy),wasmUrl:new URL('./node_modules/@mujoco/mujoco/mujoco.wasm',import.meta.url).href}};
-   application=mountProjectApplication({root,compactPresentation:true,publishedDuckAssetURL:new URL('./assets/microduck-visual.json',import.meta.url).href,chooseDirectory:()=>typeof window.showDirectoryPicker==='function'?window.showDirectoryPicker():Promise.reject(Error('Folder selection unavailable')),folderLimits:{max_files:512,max_file_bytes:16777216,max_total_bytes:67108864,max_depth:32,max_path_length:240},inventoryLimits:decision.policy.inventoryLimits,resolveTrusted:r=>r===REVISION?structuredClone(decision):null,onSessionPublished:()=>{if(!disposed){status.textContent='Microduck ready.';resetGrant();grantButton.disabled=!host.commands;if(host.w)host.w.microduck={dirty:true};try{quickDrive?.dispose();quickDrive=mountQuickDrive(root,()=>application?.getDriveSession())}catch{quickDrive=null}}}});
+   const makeApplication=(node,onPublished,onFailed)=>mountProjectApplication({root:node,compactPresentation:true,publishedDuckAssetURL:new URL('./assets/microduck-visual.json',import.meta.url).href,chooseDirectory:()=>typeof window.showDirectoryPicker==='function'?window.showDirectoryPicker():Promise.reject(Error('Folder selection unavailable')),folderLimits:{max_files:512,max_file_bytes:16777216,max_total_bytes:67108864,max_depth:32,max_path_length:240},inventoryLimits:decision.policy.inventoryLimits,resolveTrusted:r=>r===REVISION?structuredClone(decision):null,onSessionPublished:onPublished,onOpenFailed:onFailed});
+   const published=()=>{if(!disposed){status.textContent='Microduck ready.';resetGrant();grantButton.disabled=!host.commands;if(host.w)host.w.microduck={dirty:true};try{quickDrive?.dispose();quickDrive=mountQuickDrive(root,()=>application?.getDriveSession())}catch{quickDrive=null}}};
+   applicationRoot=document.createElement('div');root.append(applicationRoot);
+   application=makeApplication(applicationRoot,published,()=>{if(!disposed)status.textContent='Unable to open Microduck project.'});
+   replaceProject=async(file,isCurrent)=>{const previous=application,previousRoot=applicationRoot;if(!previous||staged)throw Error('Project replacement unavailable');
+    const wasInert=previousRoot.inert;previousRoot.inert=true;resetGrant();
+    try {await stageReplacement({file,isCurrent:()=>!disposed&&application===previous&&isCurrent(),signal:abort.signal,createCandidate:input=>{
+     const node=document.createElement('div');node.className='microduck-stage';root.append(node);let resolve,reject;const ready=new Promise((yes,no)=>{resolve=yes;reject=no});
+     let owned;try{owned=makeApplication(node,()=>resolve(),()=>reject(Error('Unable to open the selected project')));staged=owned;owned.openFile(input)}catch(error){node.remove();if(owned)void owned.dispose();throw error}
+     return {node,owned,ready,async dispose(){if(staged===owned)staged=null;try{await owned.dispose()}finally{node.remove()}}};
+    },commit:candidate=>{application=candidate.owned;applicationRoot=candidate.node;staged=null;candidate.node.classList.remove('microduck-stage');previousRoot?.remove();published();void previous.dispose().catch(error=>console.error('Microduck cleanup failed',error))}});
+    } finally {if(application===previous&&previousRoot)previousRoot.inert=wasInert;}
+   };
    if(disposed||host.signal?.aborted){const owned=application;application=null;await owned.dispose();return}
    application.openFile(new File([bytes],'microduck.brf',{type:'application/json'}));
    status.textContent='Opening Microduck...';

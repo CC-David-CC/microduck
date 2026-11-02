@@ -31,3 +31,4 @@
 .microduck-app [data-brf=research-attempt-actions] {display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;}
 .microduck-app [data-brf=research-step-label] {display:inline-flex; align-items:center; gap:6px; margin-right:6px;}
 .microduck-app [data-brf=research-step-count] {width:4.5em;}
+.microduck-content{position:relative}.microduck-stage{position:absolute;inset:0;visibility:hidden;pointer-events:none}

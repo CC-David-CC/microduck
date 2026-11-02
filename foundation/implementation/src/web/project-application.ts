@@ -305,5 +305,10 @@ export function mountProjectApplication(options: {root: HTMLElement; chooseDirec
       openFile(file);
     } finally {replacing=false}
   }
-  return Object.freeze({openFile,replaceFile,captureFile,dispose});
+  function getDriveSession() {
+    const run=active;
+    if(disposed || failed || !run || run.cancelled || run.phase!=='published' || !run.session)return null;
+    return run.session;
+  }
+  return Object.freeze({openFile,replaceFile,captureFile,getDriveSession,dispose});
 }

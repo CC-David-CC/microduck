@@ -20,6 +20,12 @@ try{
  await page.waitForFunction(()=>document.querySelector('[data-brf=app-status]')?.textContent==='Project open.',null,{timeout:90000});
  await page.locator('[data-brf=show-simple-duck]').click();
  await page.waitForFunction(()=>/Simple duck, step 0/.test(document.querySelector('[data-brf=schematic-status]')?.textContent??''));
+ const agent=async speed=>page.evaluate(async speed=>{const registry=await publicCommandRegistry();const command=registry.list().find(x=>x.appId==='microduck'&&x.id==='set-walk-speed');if(!command)throw Error('Agent command missing');return registry.execute({windowId:command.windowId,command:command.id,args:{speed}})},speed);
+ let denied=false;try{await agent(.2)}catch{denied=true}if(!denied)throw Error('Agent command allowed without grant');
+ await page.getByRole('button',{name:'Allow agent drive'}).click();
+ const agentReply=await agent(.2);if(agentReply.status!=='accepted')throw Error('Agent target was not accepted');
+ await page.getByRole('button',{name:'Turn off agent drive'}).click();
+ denied=false;try{await agent(.2)}catch{denied=true}if(!denied)throw Error('Revoked agent command allowed');
  await page.locator('[data-brf=target-value]').fill('0.25');await page.locator('[data-brf=target-set]').click();
  await page.waitForFunction(()=>/Target request accepted/.test(document.querySelector('[data-brf=target-feedback]')?.textContent??''));
  await page.getByRole('button',{name:'Hardware tuning mode'}).click();await page.getByRole('button',{name:'Game mode'}).click();

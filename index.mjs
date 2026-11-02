@@ -1,7 +1,7 @@
 import './style.css';
 import {mountProjectApplication} from './foundation/implementation/src/web/project-application.ts';
 import profile from './microduck-profile.json' with {type:'json'};
-import {createFileActions} from './file-actions.mjs';
+import {createFileActions,rememberOpenedFile} from './file-actions.mjs';
 import {createDriveGrant} from './drive-grant.mjs';
 import {mountQuickDrive} from './quick-drive.mjs';
 import {stageReplacement} from './staged-open.mjs';
@@ -37,7 +37,7 @@ export function mount(host) {
  const actions=host.storage?createFileActions(host,()=>fileApplication,()=>!disposed):null;
  save.disabled=!actions;open.disabled=!actions;
  save.addEventListener('click',()=>{if(!actions)return;fileStatus.textContent='Saving project...';void actions.saveAs().then(result=>{if(!disposed&&result)fileStatus.textContent=result.current?'Saved locally: '+result.path+' ('+result.status+'). The live simulation state is not fully saved.':'An earlier snapshot was saved; the current session has changed.'},error=>{if(!disposed)fileStatus.textContent='Save failed: '+String(error?.message||error)})});
- open.addEventListener('click',()=>{if(!actions)return;void (async()=>{try{if(typeof host.ui?.confirm!=='function')throw Error('Open confirmation unavailable');const confirmed=await host.ui.confirm('Open a saved project? The current live simulation will close after the new project opens. Its live state is not fully saved.',{title:'Open Microduck project',signal:host.signal});if(!confirmed||disposed)return;fileStatus.textContent='Opening project...';const result=await actions.open();if(!disposed&&result)fileStatus.textContent='Opened '+result.path+'. Saved records are unverified.'}catch(error){if(!disposed)fileStatus.textContent='Open failed: '+String(error?.message||error)}})()});
+ open.addEventListener('click',()=>{if(!actions)return;void (async()=>{try{if(typeof host.ui?.confirm!=='function')throw Error('Open confirmation unavailable');const confirmed=await host.ui.confirm('Open a saved project? The current live simulation will close after the new project opens. Its live state is not fully saved.',{title:'Open Microduck project',signal:host.signal});if(!confirmed||disposed)return;fileStatus.textContent='Opening project...';const result=await actions.open();if(!disposed&&result){rememberOpenedFile(host,result);fileStatus.textContent='Opened '+result.path+'. Saved records are unverified.'}}catch(error){if(!disposed)fileStatus.textContent='Open failed: '+String(error?.message||error)}})()});
  const stop=()=>{if(disposed)return;disposed=true;driveGrant.revoke();quickDrive?.dispose();quickDrive=null;for(const remove of unregister)remove();abort.abort();if(staged){void staged.dispose().catch(error=>console.error('Microduck candidate cleanup failed',error));staged=null}host.signal?.removeEventListener('abort',stop);if(application){const owned=application;application=null;void owned.dispose().catch(error=>console.error('Microduck cleanup failed',error))}};
  host.signal?.addEventListener('abort',stop,{once:true});
  queueMicrotask(()=>{void (async()=>{
@@ -53,8 +53,11 @@ export function mount(host) {
    const decision={project_revision:REVISION,...structuredClone(profile),runnerOrigin:origin,frameURL:origin+'/frame',policy:{...structuredClone(profile.policy),wasmUrl:new URL('./node_modules/@mujoco/mujoco/mujoco.wasm',import.meta.url).href}};
    const makeApplication=(node,onPublished,onFailed)=>mountProjectApplication({root:node,compactPresentation:true,publishedDuckAssetURL:new URL('./assets/microduck-visual.json',import.meta.url).href,chooseDirectory:()=>typeof window.showDirectoryPicker==='function'?window.showDirectoryPicker():Promise.reject(Error('Folder selection unavailable')),folderLimits:{max_files:512,max_file_bytes:16777216,max_total_bytes:67108864,max_depth:32,max_path_length:240},inventoryLimits:decision.policy.inventoryLimits,resolveTrusted:r=>r===REVISION?structuredClone(decision):null,onSessionPublished:onPublished,onOpenFailed:onFailed});
    let initial=host.w?.launchContext?.storage==='mirror'?host.w.launchContext:null;
+   // A requested path is not a restored document until the staged open has
+   // actually succeeded. Do not persist a failed handoff in the layout.
+   if(initial&&host.w){host.w.launchContext=null;try{host.desktop?.saveLayout?.()}catch{/* opening does not depend on layout persistence */}}
    const published=()=>{if(!disposed){status.textContent='Microduck ready.';resetGrant();grantButton.disabled=!host.commands;if(host.w)host.w.microduck={dirty:true};try{quickDrive?.dispose();quickDrive=mountQuickDrive(root,()=>application?.getDriveSession())}catch{quickDrive=null}
-    if(initial){const request=initial;initial=null;queueMicrotask(()=>{if(disposed||!actions||request.owner!==host.storage.signedInSubject())return;fileStatus.textContent='Opening project...';void actions.open(request.path).then(result=>{if(!disposed&&result)fileStatus.textContent='Opened '+result.path+'. Saved records are unverified.'},error=>{if(!disposed)fileStatus.textContent='Open failed: '+String(error?.message||error)})})}
+    if(initial){const request=initial;initial=null;queueMicrotask(()=>{if(disposed||!actions||request.owner!==host.storage.signedInSubject())return;fileStatus.textContent='Opening project...';void actions.open(request.path).then(result=>{if(!disposed&&result){rememberOpenedFile(host,result);fileStatus.textContent='Opened '+result.path+'. Saved records are unverified.'}},error=>{if(!disposed)fileStatus.textContent='Open failed: '+String(error?.message||error)})})}
    }};
    applicationRoot=document.createElement('div');root.append(applicationRoot);
    application=makeApplication(applicationRoot,published,()=>{if(!disposed)status.textContent='Unable to open Microduck project.'});

@@ -50,7 +50,17 @@ export function createFileActions(host,getApplication,isAlive) {
    await validate();
    await app.replaceFile(new File([file.data],path.split('/').pop(),{type:'application/json'}),()=>{try{check(context,owner);return true}catch{return false}},validate);
    check(context,owner);
-   return {path,version:file.version,status:file.status};
+   return {path,version:file.version,status:file.status,owner};
   })}
  });
+}
+
+// Record only a successful swap in the account-bound desktop layout. Never
+// let a late completion attach a private path to a different session.
+export function rememberOpenedFile(host,result) {
+ if(!result||typeof result.path!=='string'||typeof result.owner!=='string'||!host.w||host.signal?.aborted||host.storage.signedInSubject()!==result.owner)return false;
+ host.w.launchContext=Object.freeze({version:1,storage:'mirror',path:result.path,owner:result.owner});
+ host.w.ownerSub=result.owner;
+ try{host.desktop?.saveLayout?.()}catch{/* the open succeeded even if layout persistence fails */}
+ return true;
 }

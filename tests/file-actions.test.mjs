@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {createFileActions} from '../file-actions.mjs';
+import {createFileActions,rememberOpenedFile} from '../file-actions.mjs';
 function fixture(){
  let valid=true,current=true,writes=[],opened=null;
  const context={owner:'alice',valid:()=>valid,path:x=>x,name:x=>x,files:{async stat(){throw Error('File not found.')},async read(){return {data:new TextEncoder().encode('saved'),version:'v1',status:'synced'}},async write(...args){writes.push(args);return {version:'v2',status:'pending'}}}};
@@ -57,4 +57,12 @@ test('direct file handoff rechecks the version after the candidate opens',async(
  const a=createFileActions(f.host,()=>f.application,()=>true);
  await assert.rejects(a.open('/Robot/walk.brf'),/changed while opening/);
  await assert.rejects(a.open('/Robot/walk.txt'),/\.brf/);
+});
+test('layout path advances only for a successful current-account open',()=>{
+ const controller=new AbortController();let owner='alice',saves=0;
+ const host={w:{launchContext:{path:'/old.brf'}},signal:controller.signal,storage:{signedInSubject:()=>owner},desktop:{saveLayout(){saves++}}};
+ assert.equal(rememberOpenedFile(host,null),false);assert.equal(host.w.launchContext.path,'/old.brf');
+ owner='bob';assert.equal(rememberOpenedFile(host,{owner:'alice',path:'/new.brf'}),false);assert.equal(host.w.launchContext.path,'/old.brf');
+ owner='alice';assert.equal(rememberOpenedFile(host,{owner:'alice',path:'/new.brf'}),true);assert.deepEqual(host.w.launchContext,{version:1,storage:'mirror',owner:'alice',path:'/new.brf'});assert.equal(saves,1);
+ controller.abort();assert.equal(rememberOpenedFile(host,{owner:'alice',path:'/late.brf'}),false);assert.equal(host.w.launchContext.path,'/new.brf');
 });

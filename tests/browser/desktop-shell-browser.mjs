@@ -41,6 +41,9 @@ try{
  await page.waitForFunction(()=>document.querySelector('[data-brf=app-status]')?.textContent==='Project open.',null,{timeout:30000});
  const saved=await page.locator('[data-brf=saved-records]').textContent();
  if(!saved.includes('0.25'))throw Error('Saved target missing: '+saved);
+ await page.getByRole('button',{name:'Use saved target 0.25'}).click();
+ await page.waitForFunction(()=>/Saved target accepted/.test(document.querySelector('[data-brf=saved-target-feedback]')?.textContent??''),null,{timeout:30000});
+
  await page.locator('.window.focused [aria-label=Close]').click();
  await page.getByRole('dialog').getByRole('button',{name:'Keep editing'}).click();
  if(!await page.locator('.window-content.microduck-app').count())throw Error('Keep editing closed the app');

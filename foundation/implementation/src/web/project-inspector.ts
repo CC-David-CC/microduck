@@ -6,14 +6,15 @@ import {decodeExperimentFile,encodeExperimentFile} from '../projects/experiment-
 import {encodeMeasuredAttemptRecord} from '../experiments/measured-attempt-record.ts';
 import {inspectMeasuredAttemptRecord} from '../experiments/measured-attempt-record.ts';
 import {summarizeSavedTargets} from './saved-target-summary.ts';
+import {readSavedTarget} from './saved-target-reapply.ts';
 import {summarizeSavedNotes} from './saved-notes-summary.ts';
 import {inspectGameChallenge} from '../experiments/game-challenge-record.ts';
 
 type OverviewEvent = {kind:'selected';attempt:number;revision:string} | {kind:'overview';attempt:number;revision:string;goal:string|null;welcome:string|null;schematic?:boolean;simpleDuck?:boolean;tutorial?:boolean;turnGoal?:{body:string;min_radians:number}|null;targetLabels?:readonly {group_id:string;field:string;label:string}[]};
-export type ProjectInspectorConfig = {chooseDirectory:()=>Promise<unknown>; folderLimits:ProjectFolderLimits; inventoryLimits:ProjectInventoryLimits; onChoice?:(attempt:number)=>void; onSelectionCleared?:()=>void; captureSessionGame?:(inventory:Readonly<ProjectInventory>)=>{id:string;content:Blob;isCurrent:()=>boolean}|null; captureSessionNotes?:(inventory:Readonly<ProjectInventory>)=>{content:Blob;isCurrent:()=>boolean}|null; captureSessionMeasured?:(inventory:Readonly<ProjectInventory>)=>{id:string;receipt:unknown;isCurrent:()=>boolean}|null; captureSessionTargets?:(inventory:Readonly<ProjectInventory>)=>{id:string;encode:()=>Promise<Blob>;isCurrent:()=>boolean}|null; onOverview?:(event:OverviewEvent)=>void};
+export type ProjectInspectorConfig = {chooseDirectory:()=>Promise<unknown>; folderLimits:ProjectFolderLimits; inventoryLimits:ProjectInventoryLimits; onChoice?:(attempt:number)=>void; onSelectionCleared?:()=>void; captureSessionGame?:(inventory:Readonly<ProjectInventory>)=>{id:string;content:Blob;isCurrent:()=>boolean}|null; captureSessionNotes?:(inventory:Readonly<ProjectInventory>)=>{content:Blob;isCurrent:()=>boolean}|null; captureSessionMeasured?:(inventory:Readonly<ProjectInventory>)=>{id:string;receipt:unknown;isCurrent:()=>boolean}|null; captureSessionTargets?:(inventory:Readonly<ProjectInventory>)=>{id:string;encode:()=>Promise<Blob>;isCurrent:()=>boolean}|null; onOverview?:(event:OverviewEvent)=>void; applySavedTarget?:(inventory:Readonly<ProjectInventory>,target:{group_id:string;field:string;value:number})=>Promise<unknown>};
 
 /** Inspect selected source bytes; this does not admit, compile or run a project. */
-export function mountProjectInspector({root,chooseDirectory,folderLimits,inventoryLimits,onChoice,onSelectionCleared,captureSessionGame,captureSessionNotes,captureSessionMeasured,captureSessionTargets,onOverview}:{root:HTMLElement}&ProjectInspectorConfig) {
+export function mountProjectInspector({root,chooseDirectory,folderLimits,inventoryLimits,onChoice,onSelectionCleared,captureSessionGame,captureSessionNotes,captureSessionMeasured,captureSessionTargets,onOverview,applySavedTarget}:{root:HTMLElement}&ProjectInspectorConfig) {
   if (!root || !root.ownerDocument || typeof root.ownerDocument.createElement!=='function' || typeof root.appendChild!=='function' || typeof chooseDirectory!=='function') throw new Error('Invalid project inspector');
   const limits = <T extends object>(value:T, keys:readonly string[]):T => {
     if (!value || typeof value!=='object' || Array.isArray(value) || ![Object.prototype,null].includes(Object.getPrototypeOf(value)) || Reflect.ownKeys(value).length!==keys.length) throw new Error('Invalid project inspector limits');
@@ -35,9 +36,10 @@ export function mountProjectInspector({root,chooseDirectory,folderLimits,invento
   overview.setAttribute('data-brf','project-overview');overview.textContent='No project overview yet.';
   const fileInput=doc.createElement('input');fileInput.setAttribute('data-brf','project-file-input');fileInput.setAttribute('type','file');fileInput.setAttribute('aria-label','Inspect saved project file');
   const savedRecords=doc.createElement('p');savedRecords.setAttribute('data-brf','saved-records');savedRecords.textContent='No saved records selected.';
+  const savedActions=doc.createElement('div'),savedFeedback=doc.createElement('p');savedFeedback.setAttribute('data-brf','saved-target-feedback');savedFeedback.setAttribute('role','status');
   const exportButton=doc.createElement('button'),exportStatus=doc.createElement('p');exportButton.setAttribute('data-brf','project-file-export');exportButton.setAttribute('type','button');exportButton.textContent='Download project and saved attempts';exportButton.disabled=true;
   exportStatus.setAttribute('data-brf','project-file-export-status');exportStatus.textContent='No export prepared.';
-  container.append(button,fileInput,status,overview,savedRecords,exportButton,exportStatus);
+  container.append(button,fileInput,status,overview,savedRecords,savedActions,savedFeedback,exportButton,exportStatus);
   let disposed=false, generation=0, selected:Readonly<ProjectInventory>|null=null, acquisition:AbortController|null=null;
   let loadedRecords:{id:string;kind:'game'|'research';content:Blob}[]=[],exportActive=false;const exportUrls=new Set<string>();
   const syncExport=()=>{exportButton.disabled=disposed||!selected||exportActive;};
@@ -98,6 +100,7 @@ export function mountProjectInspector({root,chooseDirectory,folderLimits,invento
   let activeDecodes=0,queuedFile:{file:File;token:number}|null=null;
   const onChoose=()=>{
     if (disposed) return;
+    savedActions.replaceChildren();savedFeedback.textContent='';
     const token=++generation;queuedFile=null;savedRecords.textContent='No saved records selected.';
     try {onChoice?.(token);} catch { /* Observer has no acquisition authority. */ }
     if (disposed || token!==generation) return;
@@ -137,7 +140,23 @@ export function mountProjectInspector({root,chooseDirectory,folderLimits,invento
       } else if(row.kind==='research'&&row.id==='session-attempt-notes') {
         try {detail=await summarizeSavedNotes(row.content,revision);} catch {detail='unverified; note details unavailable';}
       } else if(row.kind==='research'&&row.id.startsWith('session-targets-')) {
-        try {detail=await summarizeSavedTargets(row.content,revision);} catch {detail='unverified; target details unavailable';}
+        try {
+          detail=await summarizeSavedTargets(row.content,revision);
+          if(applySavedTarget) {
+            const target=await readSavedTarget(row.content,revision), inventory=selected;
+            if(!disposed&&token===generation&&inventory&&inventory.project_revision===revision){
+              const apply=doc.createElement('button');apply.type='button';apply.textContent='Use saved target '+String(target.value);
+              apply.addEventListener('click',()=>{
+                if(disposed||token!==generation||selected!==inventory)return;
+                apply.disabled=true;savedFeedback.textContent='Requesting saved target...';
+                void applySavedTarget(inventory,{group_id:target.group_id,field:target.field,value:target.value}).then((reply:any)=>{
+                  if(!disposed&&token===generation&&selected===inventory)savedFeedback.textContent=reply?.status==='accepted'?'Saved target accepted; this is a new request, not a replay.':reply?.status==='rejected'?'Saved target rejected.':'Saved target outcome unknown.';
+                },()=>{if(!disposed&&token===generation&&selected===inventory)savedFeedback.textContent='Saved target outcome unknown.';}).finally(()=>{if(!disposed&&token===generation)apply.disabled=false;});
+              });
+              savedActions.appendChild(apply);
+            }
+          }
+        } catch {detail='unverified; target details unavailable or incomplete';}
       } else if(row.kind==='research') {
         try {
           const parsed=await readManifestJson(row.content,{max_bytes:131072,max_depth:20});
@@ -171,6 +190,7 @@ export function mountProjectInspector({root,chooseDirectory,folderLimits,invento
   }
   const selectFile=(file:File):number=>{
     if(disposed || !(file instanceof File))throw Error('Project file unavailable');
+    savedActions.replaceChildren();savedFeedback.textContent='';
     const token=++generation;selected=null;loadedRecords=[];syncExport();queuedOverview=null;overview.textContent='No project overview yet.';savedRecords.textContent='No saved records selected.';
     try{onSelectionCleared?.()}catch{}
     if(disposed||token!==generation)throw Error('Project selection changed');

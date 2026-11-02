@@ -233,6 +233,15 @@ export function mountProjectApplication(options: {root: HTMLElement; chooseDirec
   try {
     inspector = mountProjectInspector({root:inspectRoot,chooseDirectory,folderLimits,inventoryLimits,
       onSelectionCleared:()=>{overview=null;syncGoal();update();},
+      applySavedTarget:async(inventory,target)=>{
+        const run=active,session=run?.session;
+        if(disposed||!run||run.cancelled||run.phase!=='published'||run.revision!==inventory.project_revision||!session||inspector?.selectedProject!==inventory)throw Error('Saved target unavailable');
+        const identity=session.identity;
+        const result=await session.setTarget(target);
+        if(disposed||active!==run||run.cancelled||run.session!==session||inspector?.selectedProject!==inventory||
+          session.identity.session_id!==identity.session_id||session.identity.run_epoch!==identity.run_epoch)return {status:'unknown'};
+        return result;
+      },
       captureSessionGame:(inventory)=>{
         const run=active,shell=run?.shell,session=run?.session;
         if(disposed||!run||run.cancelled||run.phase!=='published'||run.revision!==inventory.project_revision||!shell||!session)return null;

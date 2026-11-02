@@ -1,5 +1,12 @@
 {
   "dependencies": {
-    "onnxruntime-web": "1.31.1"
-  }
+    "@mujoco/mujoco": "3.17.0",
+    "acorn": "8.19.0",
+    "onnxruntime-web": "1.31.1",
+    "saxes": "6.0.0",
+    "three": "0.186.1"
+  },
+  "name": "microduck",
+  "private": true,
+  "type": "module"
 }

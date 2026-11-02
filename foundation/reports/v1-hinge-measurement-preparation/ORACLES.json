@@ -1,0 +1,1064 @@
+{
+  "schema_version": 1,
+  "authority": "Independent fixed pre-implementation Python tuple and rational oracle",
+  "projects": {
+    "base": {
+      "fixture_path": "reports/v1-scalar-source-intake/scalar-stage.xml",
+      "bytes": 1879,
+      "sha256": "f0fcc0184861506dd2c1c09dec3ca0f220c8992c5c902df8be2b403d4ecb5270",
+      "manifest_source": "{\"schema_version\":2,\"engine\":{\"name\":\"mujoco\",\"version\":\"3.17.0\",\"wasm_sha256\":\"d0a496a9b0d1cc780857fdf5026980ae653da850e840919ca58ac0cfbb248889\"},\"model\":\"model.xml\",\"files\":{\"model.xml\":{\"bytes\":1879,\"sha256\":\"f0fcc0184861506dd2c1c09dec3ca0f220c8992c5c902df8be2b403d4ecb5270\"}}}",
+      "manifest_utf8_hex": "7b22736368656d615f76657273696f6e223a322c22656e67696e65223a7b226e616d65223a226d756a6f636f222c2276657273696f6e223a22332e31372e30222c227761736d5f736861323536223a2264306134393661396230643163633738303835376664663530323639383061653635336461383530653834303931396361353861633063666262323438383839227d2c226d6f64656c223a226d6f64656c2e786d6c222c2266696c6573223a7b226d6f64656c2e786d6c223a7b226279746573223a313837392c22736861323536223a2266306663633031383438363135303664643263316330396465633363613066323230633839393263356339303264663862653262343033643465636235323730227d7d7d",
+      "project_revision": "02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349"
+    },
+    "fault": {
+      "fixture_path": "reports/v1-hinge-measurement-preparation/hinge-fault.xml",
+      "bytes": 734,
+      "sha256": "5bdc9c3d59046130aae001a304cd434e9925babdeff92081b230a42f00fc1a68",
+      "manifest_source": "{\"schema_version\":2,\"engine\":{\"name\":\"mujoco\",\"version\":\"3.17.0\",\"wasm_sha256\":\"d0a496a9b0d1cc780857fdf5026980ae653da850e840919ca58ac0cfbb248889\"},\"model\":\"model.xml\",\"files\":{\"model.xml\":{\"bytes\":734,\"sha256\":\"5bdc9c3d59046130aae001a304cd434e9925babdeff92081b230a42f00fc1a68\"}}}",
+      "manifest_utf8_hex": "7b22736368656d615f76657273696f6e223a322c22656e67696e65223a7b226e616d65223a226d756a6f636f222c2276657273696f6e223a22332e31372e30222c227761736d5f736861323536223a2264306134393661396230643163633738303835376664663530323639383061653635336461383530653834303931396361353861633063666262323438383839227d2c226d6f64656c223a226d6f64656c2e786d6c222c2266696c6573223a7b226d6f64656c2e786d6c223a7b226279746573223a3733342c22736861323536223a2235626463396333643539303436313330616165303031613330346364343334653939323562616264656666393230383162323330613432663030666331613638227d7d7d",
+      "project_revision": "113b1635cdcb37bb2660b54b69183c90c64659e31ac1e7c654d0a8911e1b16ca"
+    }
+  },
+  "vectors": [
+    {
+      "id": "base",
+      "project_revision": "02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349",
+      "request": {
+        "source_id": "truth.angle",
+        "channel_id": "measure.angle",
+        "effects": {
+          "stride": 3,
+          "phase": 1,
+          "delay_ticks": 2,
+          "max_age": 3,
+          "max_pending": 1,
+          "noise": {
+            "algorithm": "xorshift32-13-17-5-u32-v1",
+            "law": "uniform-half-open-v1",
+            "seed": 1,
+            "amplitude": 0.125
+          },
+          "dropout": "explicit-invalid",
+          "quantization": "none",
+          "bounds": "none"
+        }
+      },
+      "facts": {
+        "engine_version": "3.17.0",
+        "quantity": "mujoco.qpos",
+        "capture_stage": "kinematics",
+        "joint_name": "angle",
+        "joint_id": 1,
+        "joint_type": "hinge",
+        "qpos_address": 7,
+        "dof_address": 6,
+        "body_id": 2,
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "reference": 0.25,
+        "native_unit": "rad"
+      },
+      "axis_bits": [
+        "0000000000000000",
+        "0000000000000000",
+        "3ff0000000000000"
+      ],
+      "reference_bits": "3fd0000000000000",
+      "amplitude_bits": "3fc0000000000000",
+      "source_json": "[\"brf.hinge-position-source.v1\",\"02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349\",\"truth.angle\",[\"3.17.0\",\"mujoco.qpos\",\"kinematics\",\"angle\",1,\"hinge\",7,6,2,[\"0000000000000000\",\"0000000000000000\",\"3ff0000000000000\"],\"3fd0000000000000\",\"rad\"],[\"truth\",1,\"rad\",null,[]]]",
+      "source_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d736f757263652e7631222c2230326366323637386461353133646536373335623364383935306638666666666566636235633130343332336161343232636531643737616561613036333439222c2274727574682e616e676c65222c5b22332e31372e30222c226d756a6f636f2e71706f73222c226b696e656d6174696373222c22616e676c65222c312c2268696e6765222c372c362c322c5b2230303030303030303030303030303030222c2230303030303030303030303030303030222c2233666630303030303030303030303030225d2c2233666430303030303030303030303030222c22726164225d2c5b227472757468222c312c22726164222c6e756c6c2c5b5d5d5d",
+      "source_sha256": "78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b",
+      "measurement_json": "[\"brf.hinge-position-measurement.v1\",\"78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b\",\"measure.angle\",[\"measurement\",1,\"rad\",null,[\"truth.angle\"]],[\"kinematics\",3,1,2,3,1],[\"xorshift32-13-17-5-u32-v1\",\"uniform-half-open-v1\",1,\"3fc0000000000000\"],[\"explicit-invalid\",\"none\",\"none\"]]",
+      "measurement_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d6d6561737572656d656e742e7631222c2237386164386166393361616232623138303436316331636433646330386438643832623865633966313334653261373635313262653761303930663937653062222c226d6561737572652e616e676c65222c5b226d6561737572656d656e74222c312c22726164222c6e756c6c2c5b2274727574682e616e676c65225d5d2c5b226b696e656d6174696373222c332c312c322c332c315d2c5b22786f72736869667433322d31332d31372d352d7533322d7631222c22756e69666f726d2d68616c662d6f70656e2d7631222c312c2233666330303030303030303030303030225d2c5b226578706c696369742d696e76616c6964222c226e6f6e65222c226e6f6e65225d5d",
+      "measurement_sha256": "2167a5d9688d02d3c9acf3ea6050bf49674e59df2291ea63d4d1da25ac7d355b"
+    },
+    {
+      "id": "source-id",
+      "project_revision": "02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349",
+      "request": {
+        "source_id": "truth.other",
+        "channel_id": "measure.angle",
+        "effects": {
+          "stride": 3,
+          "phase": 1,
+          "delay_ticks": 2,
+          "max_age": 3,
+          "max_pending": 1,
+          "noise": {
+            "algorithm": "xorshift32-13-17-5-u32-v1",
+            "law": "uniform-half-open-v1",
+            "seed": 1,
+            "amplitude": 0.125
+          },
+          "dropout": "explicit-invalid",
+          "quantization": "none",
+          "bounds": "none"
+        }
+      },
+      "facts": {
+        "engine_version": "3.17.0",
+        "quantity": "mujoco.qpos",
+        "capture_stage": "kinematics",
+        "joint_name": "angle",
+        "joint_id": 1,
+        "joint_type": "hinge",
+        "qpos_address": 7,
+        "dof_address": 6,
+        "body_id": 2,
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "reference": 0.25,
+        "native_unit": "rad"
+      },
+      "axis_bits": [
+        "0000000000000000",
+        "0000000000000000",
+        "3ff0000000000000"
+      ],
+      "reference_bits": "3fd0000000000000",
+      "amplitude_bits": "3fc0000000000000",
+      "source_json": "[\"brf.hinge-position-source.v1\",\"02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349\",\"truth.other\",[\"3.17.0\",\"mujoco.qpos\",\"kinematics\",\"angle\",1,\"hinge\",7,6,2,[\"0000000000000000\",\"0000000000000000\",\"3ff0000000000000\"],\"3fd0000000000000\",\"rad\"],[\"truth\",1,\"rad\",null,[]]]",
+      "source_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d736f757263652e7631222c2230326366323637386461353133646536373335623364383935306638666666666566636235633130343332336161343232636531643737616561613036333439222c2274727574682e6f74686572222c5b22332e31372e30222c226d756a6f636f2e71706f73222c226b696e656d6174696373222c22616e676c65222c312c2268696e6765222c372c362c322c5b2230303030303030303030303030303030222c2230303030303030303030303030303030222c2233666630303030303030303030303030225d2c2233666430303030303030303030303030222c22726164225d2c5b227472757468222c312c22726164222c6e756c6c2c5b5d5d5d",
+      "source_sha256": "db55bf6d41ca19c9dbcf62ff25f9bdbcba4e235ba1a327aa5b823e839e6d70f3",
+      "measurement_json": "[\"brf.hinge-position-measurement.v1\",\"db55bf6d41ca19c9dbcf62ff25f9bdbcba4e235ba1a327aa5b823e839e6d70f3\",\"measure.angle\",[\"measurement\",1,\"rad\",null,[\"truth.other\"]],[\"kinematics\",3,1,2,3,1],[\"xorshift32-13-17-5-u32-v1\",\"uniform-half-open-v1\",1,\"3fc0000000000000\"],[\"explicit-invalid\",\"none\",\"none\"]]",
+      "measurement_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d6d6561737572656d656e742e7631222c2264623535626636643431636131396339646263663632666632356639626462636261346532333562613161333237616135623832336538333965366437306633222c226d6561737572652e616e676c65222c5b226d6561737572656d656e74222c312c22726164222c6e756c6c2c5b2274727574682e6f74686572225d5d2c5b226b696e656d6174696373222c332c312c322c332c315d2c5b22786f72736869667433322d31332d31372d352d7533322d7631222c22756e69666f726d2d68616c662d6f70656e2d7631222c312c2233666330303030303030303030303030225d2c5b226578706c696369742d696e76616c6964222c226e6f6e65222c226e6f6e65225d5d",
+      "measurement_sha256": "41c7a6bcf68da3076adf9931c996ae7cc920c615d26f1e170b787a5d1837fe75"
+    },
+    {
+      "id": "channel-id",
+      "project_revision": "02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349",
+      "request": {
+        "source_id": "truth.angle",
+        "channel_id": "measure.other",
+        "effects": {
+          "stride": 3,
+          "phase": 1,
+          "delay_ticks": 2,
+          "max_age": 3,
+          "max_pending": 1,
+          "noise": {
+            "algorithm": "xorshift32-13-17-5-u32-v1",
+            "law": "uniform-half-open-v1",
+            "seed": 1,
+            "amplitude": 0.125
+          },
+          "dropout": "explicit-invalid",
+          "quantization": "none",
+          "bounds": "none"
+        }
+      },
+      "facts": {
+        "engine_version": "3.17.0",
+        "quantity": "mujoco.qpos",
+        "capture_stage": "kinematics",
+        "joint_name": "angle",
+        "joint_id": 1,
+        "joint_type": "hinge",
+        "qpos_address": 7,
+        "dof_address": 6,
+        "body_id": 2,
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "reference": 0.25,
+        "native_unit": "rad"
+      },
+      "axis_bits": [
+        "0000000000000000",
+        "0000000000000000",
+        "3ff0000000000000"
+      ],
+      "reference_bits": "3fd0000000000000",
+      "amplitude_bits": "3fc0000000000000",
+      "source_json": "[\"brf.hinge-position-source.v1\",\"02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349\",\"truth.angle\",[\"3.17.0\",\"mujoco.qpos\",\"kinematics\",\"angle\",1,\"hinge\",7,6,2,[\"0000000000000000\",\"0000000000000000\",\"3ff0000000000000\"],\"3fd0000000000000\",\"rad\"],[\"truth\",1,\"rad\",null,[]]]",
+      "source_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d736f757263652e7631222c2230326366323637386461353133646536373335623364383935306638666666666566636235633130343332336161343232636531643737616561613036333439222c2274727574682e616e676c65222c5b22332e31372e30222c226d756a6f636f2e71706f73222c226b696e656d6174696373222c22616e676c65222c312c2268696e6765222c372c362c322c5b2230303030303030303030303030303030222c2230303030303030303030303030303030222c2233666630303030303030303030303030225d2c2233666430303030303030303030303030222c22726164225d2c5b227472757468222c312c22726164222c6e756c6c2c5b5d5d5d",
+      "source_sha256": "78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b",
+      "measurement_json": "[\"brf.hinge-position-measurement.v1\",\"78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b\",\"measure.other\",[\"measurement\",1,\"rad\",null,[\"truth.angle\"]],[\"kinematics\",3,1,2,3,1],[\"xorshift32-13-17-5-u32-v1\",\"uniform-half-open-v1\",1,\"3fc0000000000000\"],[\"explicit-invalid\",\"none\",\"none\"]]",
+      "measurement_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d6d6561737572656d656e742e7631222c2237386164386166393361616232623138303436316331636433646330386438643832623865633966313334653261373635313262653761303930663937653062222c226d6561737572652e6f74686572222c5b226d6561737572656d656e74222c312c22726164222c6e756c6c2c5b2274727574682e616e676c65225d5d2c5b226b696e656d6174696373222c332c312c322c332c315d2c5b22786f72736869667433322d31332d31372d352d7533322d7631222c22756e69666f726d2d68616c662d6f70656e2d7631222c312c2233666330303030303030303030303030225d2c5b226578706c696369742d696e76616c6964222c226e6f6e65222c226e6f6e65225d5d",
+      "measurement_sha256": "1c6795ef070612bb16fe859c6095c0a68a6b0ab81278966ab7257b95dd03dc66"
+    },
+    {
+      "id": "project-byte-change",
+      "project_revision": "4d9261c751f9b660a9305d9a7212fbfd5c59d98d8f6819df0185d87bd289b9d8",
+      "request": {
+        "source_id": "truth.angle",
+        "channel_id": "measure.angle",
+        "effects": {
+          "stride": 3,
+          "phase": 1,
+          "delay_ticks": 2,
+          "max_age": 3,
+          "max_pending": 1,
+          "noise": {
+            "algorithm": "xorshift32-13-17-5-u32-v1",
+            "law": "uniform-half-open-v1",
+            "seed": 1,
+            "amplitude": 0.125
+          },
+          "dropout": "explicit-invalid",
+          "quantization": "none",
+          "bounds": "none"
+        }
+      },
+      "facts": {
+        "engine_version": "3.17.0",
+        "quantity": "mujoco.qpos",
+        "capture_stage": "kinematics",
+        "joint_name": "angle",
+        "joint_id": 1,
+        "joint_type": "hinge",
+        "qpos_address": 7,
+        "dof_address": 6,
+        "body_id": 2,
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "reference": 0.25,
+        "native_unit": "rad"
+      },
+      "axis_bits": [
+        "0000000000000000",
+        "0000000000000000",
+        "3ff0000000000000"
+      ],
+      "reference_bits": "3fd0000000000000",
+      "amplitude_bits": "3fc0000000000000",
+      "source_json": "[\"brf.hinge-position-source.v1\",\"4d9261c751f9b660a9305d9a7212fbfd5c59d98d8f6819df0185d87bd289b9d8\",\"truth.angle\",[\"3.17.0\",\"mujoco.qpos\",\"kinematics\",\"angle\",1,\"hinge\",7,6,2,[\"0000000000000000\",\"0000000000000000\",\"3ff0000000000000\"],\"3fd0000000000000\",\"rad\"],[\"truth\",1,\"rad\",null,[]]]",
+      "source_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d736f757263652e7631222c2234643932363163373531663962363630613933303564396137323132666266643563353964393864386636383139646630313835643837626432383962396438222c2274727574682e616e676c65222c5b22332e31372e30222c226d756a6f636f2e71706f73222c226b696e656d6174696373222c22616e676c65222c312c2268696e6765222c372c362c322c5b2230303030303030303030303030303030222c2230303030303030303030303030303030222c2233666630303030303030303030303030225d2c2233666430303030303030303030303030222c22726164225d2c5b227472757468222c312c22726164222c6e756c6c2c5b5d5d5d",
+      "source_sha256": "9eb648613c52fd78be2c471276f549468ddff896f6578c3aea0e442ec79664bf",
+      "measurement_json": "[\"brf.hinge-position-measurement.v1\",\"9eb648613c52fd78be2c471276f549468ddff896f6578c3aea0e442ec79664bf\",\"measure.angle\",[\"measurement\",1,\"rad\",null,[\"truth.angle\"]],[\"kinematics\",3,1,2,3,1],[\"xorshift32-13-17-5-u32-v1\",\"uniform-half-open-v1\",1,\"3fc0000000000000\"],[\"explicit-invalid\",\"none\",\"none\"]]",
+      "measurement_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d6d6561737572656d656e742e7631222c2239656236343836313363353266643738626532633437313237366635343934363864646666383936663635373863336165613065343432656337393636346266222c226d6561737572652e616e676c65222c5b226d6561737572656d656e74222c312c22726164222c6e756c6c2c5b2274727574682e616e676c65225d5d2c5b226b696e656d6174696373222c332c312c322c332c315d2c5b22786f72736869667433322d31332d31372d352d7533322d7631222c22756e69666f726d2d68616c662d6f70656e2d7631222c312c2233666330303030303030303030303030225d2c5b226578706c696369742d696e76616c6964222c226e6f6e65222c226e6f6e65225d5d",
+      "measurement_sha256": "a27780d8c5eff70700d324c81cfcc3615423575dc31320003d778b3aa47b0220"
+    },
+    {
+      "id": "stride",
+      "project_revision": "02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349",
+      "request": {
+        "source_id": "truth.angle",
+        "channel_id": "measure.angle",
+        "effects": {
+          "stride": 4,
+          "phase": 1,
+          "delay_ticks": 2,
+          "max_age": 3,
+          "max_pending": 1,
+          "noise": {
+            "algorithm": "xorshift32-13-17-5-u32-v1",
+            "law": "uniform-half-open-v1",
+            "seed": 1,
+            "amplitude": 0.125
+          },
+          "dropout": "explicit-invalid",
+          "quantization": "none",
+          "bounds": "none"
+        }
+      },
+      "facts": {
+        "engine_version": "3.17.0",
+        "quantity": "mujoco.qpos",
+        "capture_stage": "kinematics",
+        "joint_name": "angle",
+        "joint_id": 1,
+        "joint_type": "hinge",
+        "qpos_address": 7,
+        "dof_address": 6,
+        "body_id": 2,
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "reference": 0.25,
+        "native_unit": "rad"
+      },
+      "axis_bits": [
+        "0000000000000000",
+        "0000000000000000",
+        "3ff0000000000000"
+      ],
+      "reference_bits": "3fd0000000000000",
+      "amplitude_bits": "3fc0000000000000",
+      "source_json": "[\"brf.hinge-position-source.v1\",\"02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349\",\"truth.angle\",[\"3.17.0\",\"mujoco.qpos\",\"kinematics\",\"angle\",1,\"hinge\",7,6,2,[\"0000000000000000\",\"0000000000000000\",\"3ff0000000000000\"],\"3fd0000000000000\",\"rad\"],[\"truth\",1,\"rad\",null,[]]]",
+      "source_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d736f757263652e7631222c2230326366323637386461353133646536373335623364383935306638666666666566636235633130343332336161343232636531643737616561613036333439222c2274727574682e616e676c65222c5b22332e31372e30222c226d756a6f636f2e71706f73222c226b696e656d6174696373222c22616e676c65222c312c2268696e6765222c372c362c322c5b2230303030303030303030303030303030222c2230303030303030303030303030303030222c2233666630303030303030303030303030225d2c2233666430303030303030303030303030222c22726164225d2c5b227472757468222c312c22726164222c6e756c6c2c5b5d5d5d",
+      "source_sha256": "78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b",
+      "measurement_json": "[\"brf.hinge-position-measurement.v1\",\"78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b\",\"measure.angle\",[\"measurement\",1,\"rad\",null,[\"truth.angle\"]],[\"kinematics\",4,1,2,3,1],[\"xorshift32-13-17-5-u32-v1\",\"uniform-half-open-v1\",1,\"3fc0000000000000\"],[\"explicit-invalid\",\"none\",\"none\"]]",
+      "measurement_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d6d6561737572656d656e742e7631222c2237386164386166393361616232623138303436316331636433646330386438643832623865633966313334653261373635313262653761303930663937653062222c226d6561737572652e616e676c65222c5b226d6561737572656d656e74222c312c22726164222c6e756c6c2c5b2274727574682e616e676c65225d5d2c5b226b696e656d6174696373222c342c312c322c332c315d2c5b22786f72736869667433322d31332d31372d352d7533322d7631222c22756e69666f726d2d68616c662d6f70656e2d7631222c312c2233666330303030303030303030303030225d2c5b226578706c696369742d696e76616c6964222c226e6f6e65222c226e6f6e65225d5d",
+      "measurement_sha256": "877ddf5083a5c96a12902fc6373f9c433a1660a9592257a84bc1f3e10877e5ef"
+    },
+    {
+      "id": "phase",
+      "project_revision": "02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349",
+      "request": {
+        "source_id": "truth.angle",
+        "channel_id": "measure.angle",
+        "effects": {
+          "stride": 3,
+          "phase": 0,
+          "delay_ticks": 2,
+          "max_age": 3,
+          "max_pending": 1,
+          "noise": {
+            "algorithm": "xorshift32-13-17-5-u32-v1",
+            "law": "uniform-half-open-v1",
+            "seed": 1,
+            "amplitude": 0.125
+          },
+          "dropout": "explicit-invalid",
+          "quantization": "none",
+          "bounds": "none"
+        }
+      },
+      "facts": {
+        "engine_version": "3.17.0",
+        "quantity": "mujoco.qpos",
+        "capture_stage": "kinematics",
+        "joint_name": "angle",
+        "joint_id": 1,
+        "joint_type": "hinge",
+        "qpos_address": 7,
+        "dof_address": 6,
+        "body_id": 2,
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "reference": 0.25,
+        "native_unit": "rad"
+      },
+      "axis_bits": [
+        "0000000000000000",
+        "0000000000000000",
+        "3ff0000000000000"
+      ],
+      "reference_bits": "3fd0000000000000",
+      "amplitude_bits": "3fc0000000000000",
+      "source_json": "[\"brf.hinge-position-source.v1\",\"02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349\",\"truth.angle\",[\"3.17.0\",\"mujoco.qpos\",\"kinematics\",\"angle\",1,\"hinge\",7,6,2,[\"0000000000000000\",\"0000000000000000\",\"3ff0000000000000\"],\"3fd0000000000000\",\"rad\"],[\"truth\",1,\"rad\",null,[]]]",
+      "source_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d736f757263652e7631222c2230326366323637386461353133646536373335623364383935306638666666666566636235633130343332336161343232636531643737616561613036333439222c2274727574682e616e676c65222c5b22332e31372e30222c226d756a6f636f2e71706f73222c226b696e656d6174696373222c22616e676c65222c312c2268696e6765222c372c362c322c5b2230303030303030303030303030303030222c2230303030303030303030303030303030222c2233666630303030303030303030303030225d2c2233666430303030303030303030303030222c22726164225d2c5b227472757468222c312c22726164222c6e756c6c2c5b5d5d5d",
+      "source_sha256": "78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b",
+      "measurement_json": "[\"brf.hinge-position-measurement.v1\",\"78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b\",\"measure.angle\",[\"measurement\",1,\"rad\",null,[\"truth.angle\"]],[\"kinematics\",3,0,2,3,1],[\"xorshift32-13-17-5-u32-v1\",\"uniform-half-open-v1\",1,\"3fc0000000000000\"],[\"explicit-invalid\",\"none\",\"none\"]]",
+      "measurement_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d6d6561737572656d656e742e7631222c2237386164386166393361616232623138303436316331636433646330386438643832623865633966313334653261373635313262653761303930663937653062222c226d6561737572652e616e676c65222c5b226d6561737572656d656e74222c312c22726164222c6e756c6c2c5b2274727574682e616e676c65225d5d2c5b226b696e656d6174696373222c332c302c322c332c315d2c5b22786f72736869667433322d31332d31372d352d7533322d7631222c22756e69666f726d2d68616c662d6f70656e2d7631222c312c2233666330303030303030303030303030225d2c5b226578706c696369742d696e76616c6964222c226e6f6e65222c226e6f6e65225d5d",
+      "measurement_sha256": "96bbed1aa8eb7134ba53c8b9eebcde51d82941ae6c6c19e6bf57011e74d2e23d"
+    },
+    {
+      "id": "delay",
+      "project_revision": "02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349",
+      "request": {
+        "source_id": "truth.angle",
+        "channel_id": "measure.angle",
+        "effects": {
+          "stride": 3,
+          "phase": 1,
+          "delay_ticks": 1,
+          "max_age": 3,
+          "max_pending": 1,
+          "noise": {
+            "algorithm": "xorshift32-13-17-5-u32-v1",
+            "law": "uniform-half-open-v1",
+            "seed": 1,
+            "amplitude": 0.125
+          },
+          "dropout": "explicit-invalid",
+          "quantization": "none",
+          "bounds": "none"
+        }
+      },
+      "facts": {
+        "engine_version": "3.17.0",
+        "quantity": "mujoco.qpos",
+        "capture_stage": "kinematics",
+        "joint_name": "angle",
+        "joint_id": 1,
+        "joint_type": "hinge",
+        "qpos_address": 7,
+        "dof_address": 6,
+        "body_id": 2,
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "reference": 0.25,
+        "native_unit": "rad"
+      },
+      "axis_bits": [
+        "0000000000000000",
+        "0000000000000000",
+        "3ff0000000000000"
+      ],
+      "reference_bits": "3fd0000000000000",
+      "amplitude_bits": "3fc0000000000000",
+      "source_json": "[\"brf.hinge-position-source.v1\",\"02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349\",\"truth.angle\",[\"3.17.0\",\"mujoco.qpos\",\"kinematics\",\"angle\",1,\"hinge\",7,6,2,[\"0000000000000000\",\"0000000000000000\",\"3ff0000000000000\"],\"3fd0000000000000\",\"rad\"],[\"truth\",1,\"rad\",null,[]]]",
+      "source_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d736f757263652e7631222c2230326366323637386461353133646536373335623364383935306638666666666566636235633130343332336161343232636531643737616561613036333439222c2274727574682e616e676c65222c5b22332e31372e30222c226d756a6f636f2e71706f73222c226b696e656d6174696373222c22616e676c65222c312c2268696e6765222c372c362c322c5b2230303030303030303030303030303030222c2230303030303030303030303030303030222c2233666630303030303030303030303030225d2c2233666430303030303030303030303030222c22726164225d2c5b227472757468222c312c22726164222c6e756c6c2c5b5d5d5d",
+      "source_sha256": "78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b",
+      "measurement_json": "[\"brf.hinge-position-measurement.v1\",\"78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b\",\"measure.angle\",[\"measurement\",1,\"rad\",null,[\"truth.angle\"]],[\"kinematics\",3,1,1,3,1],[\"xorshift32-13-17-5-u32-v1\",\"uniform-half-open-v1\",1,\"3fc0000000000000\"],[\"explicit-invalid\",\"none\",\"none\"]]",
+      "measurement_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d6d6561737572656d656e742e7631222c2237386164386166393361616232623138303436316331636433646330386438643832623865633966313334653261373635313262653761303930663937653062222c226d6561737572652e616e676c65222c5b226d6561737572656d656e74222c312c22726164222c6e756c6c2c5b2274727574682e616e676c65225d5d2c5b226b696e656d6174696373222c332c312c312c332c315d2c5b22786f72736869667433322d31332d31372d352d7533322d7631222c22756e69666f726d2d68616c662d6f70656e2d7631222c312c2233666330303030303030303030303030225d2c5b226578706c696369742d696e76616c6964222c226e6f6e65222c226e6f6e65225d5d",
+      "measurement_sha256": "9e3e464b83b83ac052df40352e9f8724badd39a9cb6756f806b8810f0cde63ff"
+    },
+    {
+      "id": "age-zero",
+      "project_revision": "02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349",
+      "request": {
+        "source_id": "truth.angle",
+        "channel_id": "measure.angle",
+        "effects": {
+          "stride": 3,
+          "phase": 1,
+          "delay_ticks": 2,
+          "max_age": 0,
+          "max_pending": 1,
+          "noise": {
+            "algorithm": "xorshift32-13-17-5-u32-v1",
+            "law": "uniform-half-open-v1",
+            "seed": 1,
+            "amplitude": 0.125
+          },
+          "dropout": "explicit-invalid",
+          "quantization": "none",
+          "bounds": "none"
+        }
+      },
+      "facts": {
+        "engine_version": "3.17.0",
+        "quantity": "mujoco.qpos",
+        "capture_stage": "kinematics",
+        "joint_name": "angle",
+        "joint_id": 1,
+        "joint_type": "hinge",
+        "qpos_address": 7,
+        "dof_address": 6,
+        "body_id": 2,
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "reference": 0.25,
+        "native_unit": "rad"
+      },
+      "axis_bits": [
+        "0000000000000000",
+        "0000000000000000",
+        "3ff0000000000000"
+      ],
+      "reference_bits": "3fd0000000000000",
+      "amplitude_bits": "3fc0000000000000",
+      "source_json": "[\"brf.hinge-position-source.v1\",\"02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349\",\"truth.angle\",[\"3.17.0\",\"mujoco.qpos\",\"kinematics\",\"angle\",1,\"hinge\",7,6,2,[\"0000000000000000\",\"0000000000000000\",\"3ff0000000000000\"],\"3fd0000000000000\",\"rad\"],[\"truth\",1,\"rad\",null,[]]]",
+      "source_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d736f757263652e7631222c2230326366323637386461353133646536373335623364383935306638666666666566636235633130343332336161343232636531643737616561613036333439222c2274727574682e616e676c65222c5b22332e31372e30222c226d756a6f636f2e71706f73222c226b696e656d6174696373222c22616e676c65222c312c2268696e6765222c372c362c322c5b2230303030303030303030303030303030222c2230303030303030303030303030303030222c2233666630303030303030303030303030225d2c2233666430303030303030303030303030222c22726164225d2c5b227472757468222c312c22726164222c6e756c6c2c5b5d5d5d",
+      "source_sha256": "78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b",
+      "measurement_json": "[\"brf.hinge-position-measurement.v1\",\"78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b\",\"measure.angle\",[\"measurement\",1,\"rad\",null,[\"truth.angle\"]],[\"kinematics\",3,1,2,0,1],[\"xorshift32-13-17-5-u32-v1\",\"uniform-half-open-v1\",1,\"3fc0000000000000\"],[\"explicit-invalid\",\"none\",\"none\"]]",
+      "measurement_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d6d6561737572656d656e742e7631222c2237386164386166393361616232623138303436316331636433646330386438643832623865633966313334653261373635313262653761303930663937653062222c226d6561737572652e616e676c65222c5b226d6561737572656d656e74222c312c22726164222c6e756c6c2c5b2274727574682e616e676c65225d5d2c5b226b696e656d6174696373222c332c312c322c302c315d2c5b22786f72736869667433322d31332d31372d352d7533322d7631222c22756e69666f726d2d68616c662d6f70656e2d7631222c312c2233666330303030303030303030303030225d2c5b226578706c696369742d696e76616c6964222c226e6f6e65222c226e6f6e65225d5d",
+      "measurement_sha256": "0a8280e5c9a99a00e9d6f44d4af84bc85c6e816833ce99aac84e9061e936b3c5"
+    },
+    {
+      "id": "age-null",
+      "project_revision": "02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349",
+      "request": {
+        "source_id": "truth.angle",
+        "channel_id": "measure.angle",
+        "effects": {
+          "stride": 3,
+          "phase": 1,
+          "delay_ticks": 2,
+          "max_age": null,
+          "max_pending": 1,
+          "noise": {
+            "algorithm": "xorshift32-13-17-5-u32-v1",
+            "law": "uniform-half-open-v1",
+            "seed": 1,
+            "amplitude": 0.125
+          },
+          "dropout": "explicit-invalid",
+          "quantization": "none",
+          "bounds": "none"
+        }
+      },
+      "facts": {
+        "engine_version": "3.17.0",
+        "quantity": "mujoco.qpos",
+        "capture_stage": "kinematics",
+        "joint_name": "angle",
+        "joint_id": 1,
+        "joint_type": "hinge",
+        "qpos_address": 7,
+        "dof_address": 6,
+        "body_id": 2,
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "reference": 0.25,
+        "native_unit": "rad"
+      },
+      "axis_bits": [
+        "0000000000000000",
+        "0000000000000000",
+        "3ff0000000000000"
+      ],
+      "reference_bits": "3fd0000000000000",
+      "amplitude_bits": "3fc0000000000000",
+      "source_json": "[\"brf.hinge-position-source.v1\",\"02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349\",\"truth.angle\",[\"3.17.0\",\"mujoco.qpos\",\"kinematics\",\"angle\",1,\"hinge\",7,6,2,[\"0000000000000000\",\"0000000000000000\",\"3ff0000000000000\"],\"3fd0000000000000\",\"rad\"],[\"truth\",1,\"rad\",null,[]]]",
+      "source_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d736f757263652e7631222c2230326366323637386461353133646536373335623364383935306638666666666566636235633130343332336161343232636531643737616561613036333439222c2274727574682e616e676c65222c5b22332e31372e30222c226d756a6f636f2e71706f73222c226b696e656d6174696373222c22616e676c65222c312c2268696e6765222c372c362c322c5b2230303030303030303030303030303030222c2230303030303030303030303030303030222c2233666630303030303030303030303030225d2c2233666430303030303030303030303030222c22726164225d2c5b227472757468222c312c22726164222c6e756c6c2c5b5d5d5d",
+      "source_sha256": "78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b",
+      "measurement_json": "[\"brf.hinge-position-measurement.v1\",\"78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b\",\"measure.angle\",[\"measurement\",1,\"rad\",null,[\"truth.angle\"]],[\"kinematics\",3,1,2,null,1],[\"xorshift32-13-17-5-u32-v1\",\"uniform-half-open-v1\",1,\"3fc0000000000000\"],[\"explicit-invalid\",\"none\",\"none\"]]",
+      "measurement_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d6d6561737572656d656e742e7631222c2237386164386166393361616232623138303436316331636433646330386438643832623865633966313334653261373635313262653761303930663937653062222c226d6561737572652e616e676c65222c5b226d6561737572656d656e74222c312c22726164222c6e756c6c2c5b2274727574682e616e676c65225d5d2c5b226b696e656d6174696373222c332c312c322c6e756c6c2c315d2c5b22786f72736869667433322d31332d31372d352d7533322d7631222c22756e69666f726d2d68616c662d6f70656e2d7631222c312c2233666330303030303030303030303030225d2c5b226578706c696369742d696e76616c6964222c226e6f6e65222c226e6f6e65225d5d",
+      "measurement_sha256": "f77a18215f6015f5b9661a01a243262fe1d3c7be92306886c32783993ea8b05a"
+    },
+    {
+      "id": "capacity",
+      "project_revision": "02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349",
+      "request": {
+        "source_id": "truth.angle",
+        "channel_id": "measure.angle",
+        "effects": {
+          "stride": 3,
+          "phase": 1,
+          "delay_ticks": 2,
+          "max_age": 3,
+          "max_pending": 2,
+          "noise": {
+            "algorithm": "xorshift32-13-17-5-u32-v1",
+            "law": "uniform-half-open-v1",
+            "seed": 1,
+            "amplitude": 0.125
+          },
+          "dropout": "explicit-invalid",
+          "quantization": "none",
+          "bounds": "none"
+        }
+      },
+      "facts": {
+        "engine_version": "3.17.0",
+        "quantity": "mujoco.qpos",
+        "capture_stage": "kinematics",
+        "joint_name": "angle",
+        "joint_id": 1,
+        "joint_type": "hinge",
+        "qpos_address": 7,
+        "dof_address": 6,
+        "body_id": 2,
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "reference": 0.25,
+        "native_unit": "rad"
+      },
+      "axis_bits": [
+        "0000000000000000",
+        "0000000000000000",
+        "3ff0000000000000"
+      ],
+      "reference_bits": "3fd0000000000000",
+      "amplitude_bits": "3fc0000000000000",
+      "source_json": "[\"brf.hinge-position-source.v1\",\"02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349\",\"truth.angle\",[\"3.17.0\",\"mujoco.qpos\",\"kinematics\",\"angle\",1,\"hinge\",7,6,2,[\"0000000000000000\",\"0000000000000000\",\"3ff0000000000000\"],\"3fd0000000000000\",\"rad\"],[\"truth\",1,\"rad\",null,[]]]",
+      "source_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d736f757263652e7631222c2230326366323637386461353133646536373335623364383935306638666666666566636235633130343332336161343232636531643737616561613036333439222c2274727574682e616e676c65222c5b22332e31372e30222c226d756a6f636f2e71706f73222c226b696e656d6174696373222c22616e676c65222c312c2268696e6765222c372c362c322c5b2230303030303030303030303030303030222c2230303030303030303030303030303030222c2233666630303030303030303030303030225d2c2233666430303030303030303030303030222c22726164225d2c5b227472757468222c312c22726164222c6e756c6c2c5b5d5d5d",
+      "source_sha256": "78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b",
+      "measurement_json": "[\"brf.hinge-position-measurement.v1\",\"78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b\",\"measure.angle\",[\"measurement\",1,\"rad\",null,[\"truth.angle\"]],[\"kinematics\",3,1,2,3,2],[\"xorshift32-13-17-5-u32-v1\",\"uniform-half-open-v1\",1,\"3fc0000000000000\"],[\"explicit-invalid\",\"none\",\"none\"]]",
+      "measurement_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d6d6561737572656d656e742e7631222c2237386164386166393361616232623138303436316331636433646330386438643832623865633966313334653261373635313262653761303930663937653062222c226d6561737572652e616e676c65222c5b226d6561737572656d656e74222c312c22726164222c6e756c6c2c5b2274727574682e616e676c65225d5d2c5b226b696e656d6174696373222c332c312c322c332c325d2c5b22786f72736869667433322d31332d31372d352d7533322d7631222c22756e69666f726d2d68616c662d6f70656e2d7631222c312c2233666330303030303030303030303030225d2c5b226578706c696369742d696e76616c6964222c226e6f6e65222c226e6f6e65225d5d",
+      "measurement_sha256": "caa866bae4211ec6b5aeeae80674e6bbf191a8f7ee07011a781a62a1d1b52b5d"
+    },
+    {
+      "id": "seed",
+      "project_revision": "02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349",
+      "request": {
+        "source_id": "truth.angle",
+        "channel_id": "measure.angle",
+        "effects": {
+          "stride": 3,
+          "phase": 1,
+          "delay_ticks": 2,
+          "max_age": 3,
+          "max_pending": 1,
+          "noise": {
+            "algorithm": "xorshift32-13-17-5-u32-v1",
+            "law": "uniform-half-open-v1",
+            "seed": 2,
+            "amplitude": 0.125
+          },
+          "dropout": "explicit-invalid",
+          "quantization": "none",
+          "bounds": "none"
+        }
+      },
+      "facts": {
+        "engine_version": "3.17.0",
+        "quantity": "mujoco.qpos",
+        "capture_stage": "kinematics",
+        "joint_name": "angle",
+        "joint_id": 1,
+        "joint_type": "hinge",
+        "qpos_address": 7,
+        "dof_address": 6,
+        "body_id": 2,
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "reference": 0.25,
+        "native_unit": "rad"
+      },
+      "axis_bits": [
+        "0000000000000000",
+        "0000000000000000",
+        "3ff0000000000000"
+      ],
+      "reference_bits": "3fd0000000000000",
+      "amplitude_bits": "3fc0000000000000",
+      "source_json": "[\"brf.hinge-position-source.v1\",\"02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349\",\"truth.angle\",[\"3.17.0\",\"mujoco.qpos\",\"kinematics\",\"angle\",1,\"hinge\",7,6,2,[\"0000000000000000\",\"0000000000000000\",\"3ff0000000000000\"],\"3fd0000000000000\",\"rad\"],[\"truth\",1,\"rad\",null,[]]]",
+      "source_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d736f757263652e7631222c2230326366323637386461353133646536373335623364383935306638666666666566636235633130343332336161343232636531643737616561613036333439222c2274727574682e616e676c65222c5b22332e31372e30222c226d756a6f636f2e71706f73222c226b696e656d6174696373222c22616e676c65222c312c2268696e6765222c372c362c322c5b2230303030303030303030303030303030222c2230303030303030303030303030303030222c2233666630303030303030303030303030225d2c2233666430303030303030303030303030222c22726164225d2c5b227472757468222c312c22726164222c6e756c6c2c5b5d5d5d",
+      "source_sha256": "78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b",
+      "measurement_json": "[\"brf.hinge-position-measurement.v1\",\"78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b\",\"measure.angle\",[\"measurement\",1,\"rad\",null,[\"truth.angle\"]],[\"kinematics\",3,1,2,3,1],[\"xorshift32-13-17-5-u32-v1\",\"uniform-half-open-v1\",2,\"3fc0000000000000\"],[\"explicit-invalid\",\"none\",\"none\"]]",
+      "measurement_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d6d6561737572656d656e742e7631222c2237386164386166393361616232623138303436316331636433646330386438643832623865633966313334653261373635313262653761303930663937653062222c226d6561737572652e616e676c65222c5b226d6561737572656d656e74222c312c22726164222c6e756c6c2c5b2274727574682e616e676c65225d5d2c5b226b696e656d6174696373222c332c312c322c332c315d2c5b22786f72736869667433322d31332d31372d352d7533322d7631222c22756e69666f726d2d68616c662d6f70656e2d7631222c322c2233666330303030303030303030303030225d2c5b226578706c696369742d696e76616c6964222c226e6f6e65222c226e6f6e65225d5d",
+      "measurement_sha256": "ca5a93f64340315a15c41a0ba053f084af7cf422d53006aebce81edd6e117ec6"
+    },
+    {
+      "id": "positive-zero",
+      "project_revision": "02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349",
+      "request": {
+        "source_id": "truth.angle",
+        "channel_id": "measure.angle",
+        "effects": {
+          "stride": 3,
+          "phase": 1,
+          "delay_ticks": 2,
+          "max_age": 3,
+          "max_pending": 1,
+          "noise": {
+            "algorithm": "xorshift32-13-17-5-u32-v1",
+            "law": "uniform-half-open-v1",
+            "seed": 1,
+            "amplitude": 0.0
+          },
+          "dropout": "explicit-invalid",
+          "quantization": "none",
+          "bounds": "none"
+        }
+      },
+      "facts": {
+        "engine_version": "3.17.0",
+        "quantity": "mujoco.qpos",
+        "capture_stage": "kinematics",
+        "joint_name": "angle",
+        "joint_id": 1,
+        "joint_type": "hinge",
+        "qpos_address": 7,
+        "dof_address": 6,
+        "body_id": 2,
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "reference": 0.25,
+        "native_unit": "rad"
+      },
+      "axis_bits": [
+        "0000000000000000",
+        "0000000000000000",
+        "3ff0000000000000"
+      ],
+      "reference_bits": "3fd0000000000000",
+      "amplitude_bits": "0000000000000000",
+      "source_json": "[\"brf.hinge-position-source.v1\",\"02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349\",\"truth.angle\",[\"3.17.0\",\"mujoco.qpos\",\"kinematics\",\"angle\",1,\"hinge\",7,6,2,[\"0000000000000000\",\"0000000000000000\",\"3ff0000000000000\"],\"3fd0000000000000\",\"rad\"],[\"truth\",1,\"rad\",null,[]]]",
+      "source_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d736f757263652e7631222c2230326366323637386461353133646536373335623364383935306638666666666566636235633130343332336161343232636531643737616561613036333439222c2274727574682e616e676c65222c5b22332e31372e30222c226d756a6f636f2e71706f73222c226b696e656d6174696373222c22616e676c65222c312c2268696e6765222c372c362c322c5b2230303030303030303030303030303030222c2230303030303030303030303030303030222c2233666630303030303030303030303030225d2c2233666430303030303030303030303030222c22726164225d2c5b227472757468222c312c22726164222c6e756c6c2c5b5d5d5d",
+      "source_sha256": "78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b",
+      "measurement_json": "[\"brf.hinge-position-measurement.v1\",\"78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b\",\"measure.angle\",[\"measurement\",1,\"rad\",null,[\"truth.angle\"]],[\"kinematics\",3,1,2,3,1],[\"xorshift32-13-17-5-u32-v1\",\"uniform-half-open-v1\",1,\"0000000000000000\"],[\"explicit-invalid\",\"none\",\"none\"]]",
+      "measurement_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d6d6561737572656d656e742e7631222c2237386164386166393361616232623138303436316331636433646330386438643832623865633966313334653261373635313262653761303930663937653062222c226d6561737572652e616e676c65222c5b226d6561737572656d656e74222c312c22726164222c6e756c6c2c5b2274727574682e616e676c65225d5d2c5b226b696e656d6174696373222c332c312c322c332c315d2c5b22786f72736869667433322d31332d31372d352d7533322d7631222c22756e69666f726d2d68616c662d6f70656e2d7631222c312c2230303030303030303030303030303030225d2c5b226578706c696369742d696e76616c6964222c226e6f6e65222c226e6f6e65225d5d",
+      "measurement_sha256": "e52c6c188f084c8373c03cbf2916843df936ba02c9530e433fa778c524fe2d65"
+    },
+    {
+      "id": "negative-zero",
+      "project_revision": "02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349",
+      "request": {
+        "source_id": "truth.angle",
+        "channel_id": "measure.angle",
+        "effects": {
+          "stride": 3,
+          "phase": 1,
+          "delay_ticks": 2,
+          "max_age": 3,
+          "max_pending": 1,
+          "noise": {
+            "algorithm": "xorshift32-13-17-5-u32-v1",
+            "law": "uniform-half-open-v1",
+            "seed": 1,
+            "amplitude": -0.0
+          },
+          "dropout": "explicit-invalid",
+          "quantization": "none",
+          "bounds": "none"
+        }
+      },
+      "facts": {
+        "engine_version": "3.17.0",
+        "quantity": "mujoco.qpos",
+        "capture_stage": "kinematics",
+        "joint_name": "angle",
+        "joint_id": 1,
+        "joint_type": "hinge",
+        "qpos_address": 7,
+        "dof_address": 6,
+        "body_id": 2,
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "reference": 0.25,
+        "native_unit": "rad"
+      },
+      "axis_bits": [
+        "0000000000000000",
+        "0000000000000000",
+        "3ff0000000000000"
+      ],
+      "reference_bits": "3fd0000000000000",
+      "amplitude_bits": "8000000000000000",
+      "source_json": "[\"brf.hinge-position-source.v1\",\"02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349\",\"truth.angle\",[\"3.17.0\",\"mujoco.qpos\",\"kinematics\",\"angle\",1,\"hinge\",7,6,2,[\"0000000000000000\",\"0000000000000000\",\"3ff0000000000000\"],\"3fd0000000000000\",\"rad\"],[\"truth\",1,\"rad\",null,[]]]",
+      "source_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d736f757263652e7631222c2230326366323637386461353133646536373335623364383935306638666666666566636235633130343332336161343232636531643737616561613036333439222c2274727574682e616e676c65222c5b22332e31372e30222c226d756a6f636f2e71706f73222c226b696e656d6174696373222c22616e676c65222c312c2268696e6765222c372c362c322c5b2230303030303030303030303030303030222c2230303030303030303030303030303030222c2233666630303030303030303030303030225d2c2233666430303030303030303030303030222c22726164225d2c5b227472757468222c312c22726164222c6e756c6c2c5b5d5d5d",
+      "source_sha256": "78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b",
+      "measurement_json": "[\"brf.hinge-position-measurement.v1\",\"78ad8af93aab2b180461c1cd3dc08d8d82b8ec9f134e2a76512be7a090f97e0b\",\"measure.angle\",[\"measurement\",1,\"rad\",null,[\"truth.angle\"]],[\"kinematics\",3,1,2,3,1],[\"xorshift32-13-17-5-u32-v1\",\"uniform-half-open-v1\",1,\"8000000000000000\"],[\"explicit-invalid\",\"none\",\"none\"]]",
+      "measurement_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d6d6561737572656d656e742e7631222c2237386164386166393361616232623138303436316331636433646330386438643832623865633966313334653261373635313262653761303930663937653062222c226d6561737572652e616e676c65222c5b226d6561737572656d656e74222c312c22726164222c6e756c6c2c5b2274727574682e616e676c65225d5d2c5b226b696e656d6174696373222c332c312c322c332c315d2c5b22786f72736869667433322d31332d31372d352d7533322d7631222c22756e69666f726d2d68616c662d6f70656e2d7631222c312c2238303030303030303030303030303030225d2c5b226578706c696369742d696e76616c6964222c226e6f6e65222c226e6f6e65225d5d",
+      "measurement_sha256": "7d5e589b43f321a459687e626c7d1ef688f7f3d19d78f853599a9dd1311d54ed"
+    },
+    {
+      "id": "unicode-composed",
+      "project_revision": "02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349",
+      "request": {
+        "source_id": "truth.é角🧭",
+        "channel_id": "measure.角🧭",
+        "effects": {
+          "stride": 3,
+          "phase": 1,
+          "delay_ticks": 2,
+          "max_age": 3,
+          "max_pending": 1,
+          "noise": {
+            "algorithm": "xorshift32-13-17-5-u32-v1",
+            "law": "uniform-half-open-v1",
+            "seed": 1,
+            "amplitude": 0.125
+          },
+          "dropout": "explicit-invalid",
+          "quantization": "none",
+          "bounds": "none"
+        }
+      },
+      "facts": {
+        "engine_version": "3.17.0",
+        "quantity": "mujoco.qpos",
+        "capture_stage": "kinematics",
+        "joint_name": "angle",
+        "joint_id": 1,
+        "joint_type": "hinge",
+        "qpos_address": 7,
+        "dof_address": 6,
+        "body_id": 2,
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "reference": 0.25,
+        "native_unit": "rad"
+      },
+      "axis_bits": [
+        "0000000000000000",
+        "0000000000000000",
+        "3ff0000000000000"
+      ],
+      "reference_bits": "3fd0000000000000",
+      "amplitude_bits": "3fc0000000000000",
+      "source_json": "[\"brf.hinge-position-source.v1\",\"02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349\",\"truth.é角🧭\",[\"3.17.0\",\"mujoco.qpos\",\"kinematics\",\"angle\",1,\"hinge\",7,6,2,[\"0000000000000000\",\"0000000000000000\",\"3ff0000000000000\"],\"3fd0000000000000\",\"rad\"],[\"truth\",1,\"rad\",null,[]]]",
+      "source_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d736f757263652e7631222c2230326366323637386461353133646536373335623364383935306638666666666566636235633130343332336161343232636531643737616561613036333439222c2274727574682ec3a9e8a792f09fa7ad222c5b22332e31372e30222c226d756a6f636f2e71706f73222c226b696e656d6174696373222c22616e676c65222c312c2268696e6765222c372c362c322c5b2230303030303030303030303030303030222c2230303030303030303030303030303030222c2233666630303030303030303030303030225d2c2233666430303030303030303030303030222c22726164225d2c5b227472757468222c312c22726164222c6e756c6c2c5b5d5d5d",
+      "source_sha256": "1dc9fd9f697d32f6e187d18bbbb317b15be92b5357afa22c991703364a962a00",
+      "measurement_json": "[\"brf.hinge-position-measurement.v1\",\"1dc9fd9f697d32f6e187d18bbbb317b15be92b5357afa22c991703364a962a00\",\"measure.角🧭\",[\"measurement\",1,\"rad\",null,[\"truth.é角🧭\"]],[\"kinematics\",3,1,2,3,1],[\"xorshift32-13-17-5-u32-v1\",\"uniform-half-open-v1\",1,\"3fc0000000000000\"],[\"explicit-invalid\",\"none\",\"none\"]]",
+      "measurement_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d6d6561737572656d656e742e7631222c2231646339666439663639376433326636653138376431386262626233313762313562653932623533353761666132326339393137303333363461393632613030222c226d6561737572652ee8a792f09fa7ad222c5b226d6561737572656d656e74222c312c22726164222c6e756c6c2c5b2274727574682ec3a9e8a792f09fa7ad225d5d2c5b226b696e656d6174696373222c332c312c322c332c315d2c5b22786f72736869667433322d31332d31372d352d7533322d7631222c22756e69666f726d2d68616c662d6f70656e2d7631222c312c2233666330303030303030303030303030225d2c5b226578706c696369742d696e76616c6964222c226e6f6e65222c226e6f6e65225d5d",
+      "measurement_sha256": "2e0df0238168d80616fcbb0fb8d86546c00844d728ee1e87a81afd9d4319de62"
+    },
+    {
+      "id": "unicode-decomposed",
+      "project_revision": "02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349",
+      "request": {
+        "source_id": "truth.é角🧭",
+        "channel_id": "measure.角🧭",
+        "effects": {
+          "stride": 3,
+          "phase": 1,
+          "delay_ticks": 2,
+          "max_age": 3,
+          "max_pending": 1,
+          "noise": {
+            "algorithm": "xorshift32-13-17-5-u32-v1",
+            "law": "uniform-half-open-v1",
+            "seed": 1,
+            "amplitude": 0.125
+          },
+          "dropout": "explicit-invalid",
+          "quantization": "none",
+          "bounds": "none"
+        }
+      },
+      "facts": {
+        "engine_version": "3.17.0",
+        "quantity": "mujoco.qpos",
+        "capture_stage": "kinematics",
+        "joint_name": "angle",
+        "joint_id": 1,
+        "joint_type": "hinge",
+        "qpos_address": 7,
+        "dof_address": 6,
+        "body_id": 2,
+        "axis": [
+          0.0,
+          0.0,
+          1.0
+        ],
+        "reference": 0.25,
+        "native_unit": "rad"
+      },
+      "axis_bits": [
+        "0000000000000000",
+        "0000000000000000",
+        "3ff0000000000000"
+      ],
+      "reference_bits": "3fd0000000000000",
+      "amplitude_bits": "3fc0000000000000",
+      "source_json": "[\"brf.hinge-position-source.v1\",\"02cf2678da513de6735b3d8950f8ffffefcb5c104323aa422ce1d77aeaa06349\",\"truth.é角🧭\",[\"3.17.0\",\"mujoco.qpos\",\"kinematics\",\"angle\",1,\"hinge\",7,6,2,[\"0000000000000000\",\"0000000000000000\",\"3ff0000000000000\"],\"3fd0000000000000\",\"rad\"],[\"truth\",1,\"rad\",null,[]]]",
+      "source_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d736f757263652e7631222c2230326366323637386461353133646536373335623364383935306638666666666566636235633130343332336161343232636531643737616561613036333439222c2274727574682e65cc81e8a792f09fa7ad222c5b22332e31372e30222c226d756a6f636f2e71706f73222c226b696e656d6174696373222c22616e676c65222c312c2268696e6765222c372c362c322c5b2230303030303030303030303030303030222c2230303030303030303030303030303030222c2233666630303030303030303030303030225d2c2233666430303030303030303030303030222c22726164225d2c5b227472757468222c312c22726164222c6e756c6c2c5b5d5d5d",
+      "source_sha256": "496af895515a6f8161a682f4f23df94cf7e966a7a55b3015ed3053a95a0c3545",
+      "measurement_json": "[\"brf.hinge-position-measurement.v1\",\"496af895515a6f8161a682f4f23df94cf7e966a7a55b3015ed3053a95a0c3545\",\"measure.角🧭\",[\"measurement\",1,\"rad\",null,[\"truth.é角🧭\"]],[\"kinematics\",3,1,2,3,1],[\"xorshift32-13-17-5-u32-v1\",\"uniform-half-open-v1\",1,\"3fc0000000000000\"],[\"explicit-invalid\",\"none\",\"none\"]]",
+      "measurement_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d6d6561737572656d656e742e7631222c2234393661663839353531356136663831363161363832663466323364663934636637653936366137613535623330313565643330353361393561306333353435222c226d6561737572652ee8a792f09fa7ad222c5b226d6561737572656d656e74222c312c22726164222c6e756c6c2c5b2274727574682e65cc81e8a792f09fa7ad225d5d2c5b226b696e656d6174696373222c332c312c322c332c315d2c5b22786f72736869667433322d31332d31372d352d7533322d7631222c22756e69666f726d2d68616c662d6f70656e2d7631222c312c2233666330303030303030303030303030225d2c5b226578706c696369742d696e76616c6964222c226e6f6e65222c226e6f6e65225d5d",
+      "measurement_sha256": "8654096bafe578000925302ff0e1dbdfed4cda5d253c709cdaf57f846c119c13"
+    },
+    {
+      "id": "physical-negative-zero",
+      "project_revision": "113b1635cdcb37bb2660b54b69183c90c64659e31ac1e7c654d0a8911e1b16ca",
+      "request": {
+        "source_id": "truth.angle",
+        "channel_id": "measure.angle",
+        "effects": {
+          "stride": 3,
+          "phase": 1,
+          "delay_ticks": 2,
+          "max_age": 3,
+          "max_pending": 1,
+          "noise": {
+            "algorithm": "xorshift32-13-17-5-u32-v1",
+            "law": "uniform-half-open-v1",
+            "seed": 1,
+            "amplitude": 0.125
+          },
+          "dropout": "explicit-invalid",
+          "quantization": "none",
+          "bounds": "none"
+        }
+      },
+      "facts": {
+        "engine_version": "3.17.0",
+        "quantity": "mujoco.qpos",
+        "capture_stage": "kinematics",
+        "joint_name": "angle-fault",
+        "joint_id": 0,
+        "joint_type": "hinge",
+        "qpos_address": 0,
+        "dof_address": 0,
+        "body_id": 1,
+        "axis": [
+          -0.0,
+          0.0,
+          1.0
+        ],
+        "reference": -0.0,
+        "native_unit": "rad"
+      },
+      "axis_bits": [
+        "8000000000000000",
+        "0000000000000000",
+        "3ff0000000000000"
+      ],
+      "reference_bits": "8000000000000000",
+      "amplitude_bits": "3fc0000000000000",
+      "source_json": "[\"brf.hinge-position-source.v1\",\"113b1635cdcb37bb2660b54b69183c90c64659e31ac1e7c654d0a8911e1b16ca\",\"truth.angle\",[\"3.17.0\",\"mujoco.qpos\",\"kinematics\",\"angle-fault\",0,\"hinge\",0,0,1,[\"8000000000000000\",\"0000000000000000\",\"3ff0000000000000\"],\"8000000000000000\",\"rad\"],[\"truth\",1,\"rad\",null,[]]]",
+      "source_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d736f757263652e7631222c2231313362313633356364636233376262323636306235346236393138336339306336343635396533316163316537633635346430613839313165316231366361222c2274727574682e616e676c65222c5b22332e31372e30222c226d756a6f636f2e71706f73222c226b696e656d6174696373222c22616e676c652d6661756c74222c302c2268696e6765222c302c302c312c5b2238303030303030303030303030303030222c2230303030303030303030303030303030222c2233666630303030303030303030303030225d2c2238303030303030303030303030303030222c22726164225d2c5b227472757468222c312c22726164222c6e756c6c2c5b5d5d5d",
+      "source_sha256": "b74e52a63e2c02c3f9befc742e998e6ffcd6711f83c7891d37fbfba08a15cc0e",
+      "measurement_json": "[\"brf.hinge-position-measurement.v1\",\"b74e52a63e2c02c3f9befc742e998e6ffcd6711f83c7891d37fbfba08a15cc0e\",\"measure.angle\",[\"measurement\",1,\"rad\",null,[\"truth.angle\"]],[\"kinematics\",3,1,2,3,1],[\"xorshift32-13-17-5-u32-v1\",\"uniform-half-open-v1\",1,\"3fc0000000000000\"],[\"explicit-invalid\",\"none\",\"none\"]]",
+      "measurement_utf8_hex": "5b226272662e68696e67652d706f736974696f6e2d6d6561737572656d656e742e7631222c2262373465353261363365326330326333663962656663373432653939386536666663643637313166383363373839316433376662666261303861313563633065222c226d6561737572652e616e676c65222c5b226d6561737572656d656e74222c312c22726164222c6e756c6c2c5b2274727574682e616e676c65225d5d2c5b226b696e656d6174696373222c332c312c322c332c315d2c5b22786f72736869667433322d31332d31372d352d7533322d7631222c22756e69666f726d2d68616c662d6f70656e2d7631222c312c2233666330303030303030303030303030225d2c5b226578706c696369742d696e76616c6964222c226e6f6e65222c226e6f6e65225d5d",
+      "measurement_sha256": "2dc24bfa9d4a14b450393a0a4d3cdc01c1ff12e67279d72266fef1145a8483f6"
+    }
+  ],
+  "noise_u32_literals": [
+    270369,
+    67634689,
+    2647435461,
+    307599695
+  ],
+  "sample_numerators": [
+    2214862881,
+    3288860161,
+    8083253445,
+    9165969743
+  ],
+  "sample_denominator": 17179869184,
+  "value_atol": 1e-12,
+  "time_atol": 1e-14,
+  "trace": [
+    {
+      "tick": 0,
+      "time": 0.0,
+      "truth": 0.25,
+      "pending_count": 0,
+      "validity": "missing",
+      "sequence": null,
+      "capture_tick": null,
+      "available_tick": null,
+      "value": null
+    },
+    {
+      "tick": 1,
+      "time": 0.0625,
+      "truth": 0.25390625,
+      "pending_count": 1,
+      "validity": "missing",
+      "sequence": null,
+      "capture_tick": null,
+      "available_tick": null,
+      "value": null
+    },
+    {
+      "tick": 2,
+      "time": 0.125,
+      "truth": 0.265625,
+      "pending_count": 1,
+      "validity": "missing",
+      "sequence": null,
+      "capture_tick": null,
+      "available_tick": null,
+      "value": null
+    },
+    {
+      "tick": 3,
+      "time": 0.1875,
+      "truth": 0.28515625,
+      "pending_count": 0,
+      "validity": "valid",
+      "sequence": 1,
+      "capture_tick": 1,
+      "available_tick": 3,
+      "value": 0.1289219875470735
+    },
+    {
+      "tick": 4,
+      "time": 0.25,
+      "truth": 0.3125,
+      "pending_count": 1,
+      "validity": "valid",
+      "sequence": 1,
+      "capture_tick": 1,
+      "available_tick": 3,
+      "value": 0.1289219875470735
+    },
+    {
+      "tick": 5,
+      "time": 0.3125,
+      "truth": 0.34765625,
+      "pending_count": 1,
+      "validity": "stale",
+      "sequence": 1,
+      "capture_tick": 1,
+      "available_tick": 3,
+      "value": 0.1289219875470735
+    },
+    {
+      "tick": 6,
+      "time": 0.375,
+      "truth": 0.390625,
+      "pending_count": 0,
+      "validity": "valid",
+      "sequence": 2,
+      "capture_tick": 4,
+      "available_tick": 6,
+      "value": 0.19143685704329982
+    },
+    {
+      "tick": 7,
+      "time": 0.4375,
+      "truth": 0.44140625,
+      "pending_count": 1,
+      "validity": "valid",
+      "sequence": 2,
+      "capture_tick": 4,
+      "available_tick": 6,
+      "value": 0.19143685704329982
+    },
+    {
+      "tick": 8,
+      "time": 0.5,
+      "truth": 0.5,
+      "pending_count": 1,
+      "validity": "stale",
+      "sequence": 2,
+      "capture_tick": 4,
+      "available_tick": 6,
+      "value": 0.19143685704329982
+    },
+    {
+      "tick": 9,
+      "time": 0.5625,
+      "truth": 0.56640625,
+      "pending_count": 0,
+      "validity": "valid",
+      "sequence": 3,
+      "capture_tick": 7,
+      "available_tick": 9,
+      "value": 0.47050727560417727
+    },
+    {
+      "tick": 10,
+      "time": 0.625,
+      "truth": 0.640625,
+      "pending_count": 1,
+      "validity": "valid",
+      "sequence": 3,
+      "capture_tick": 7,
+      "available_tick": 9,
+      "value": 0.47050727560417727
+    },
+    {
+      "tick": 11,
+      "time": 0.6875,
+      "truth": 0.72265625,
+      "pending_count": 1,
+      "validity": "stale",
+      "sequence": 3,
+      "capture_tick": 7,
+      "available_tick": 9,
+      "value": 0.47050727560417727
+    },
+    {
+      "tick": 12,
+      "time": 0.75,
+      "truth": 0.8125,
+      "pending_count": 0,
+      "validity": "valid",
+      "sequence": 4,
+      "capture_tick": 10,
+      "available_tick": 12,
+      "value": 0.533529658743646
+    }
+  ]
+}

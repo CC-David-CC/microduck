@@ -1,0 +1,23 @@
+<mujocoinclude>
+  <worldbody>
+    <body name="free-body" pos="10 0 0">
+      <freejoint name="free"/>
+      <geom type="sphere" size="0.1" mass="1" contype="0" conaffinity="0"/>
+    </body>
+    <body name="rotor">
+      <joint name="angle" type="hinge" axis="0 0 1" ref="0.25" damping="0" armature="0" limited="false"/>
+      <inertial pos="0 0 0" mass="1" diaginertia="1 1 1"/>
+      <geom type="sphere" size="0.1" contype="0" conaffinity="0"/>
+      <site name="tip" pos="1 0 0" size="0.01"/>
+    </body>
+    <body name="slider" pos="3 0 0">
+      <joint name="translation" type="slide" axis="1 0 0" ref="-0.125" damping="0" armature="0" limited="false"/>
+      <inertial pos="0 0 0" mass="2" diaginertia="1 1 1"/>
+      <geom type="sphere" size="0.1" contype="0" conaffinity="0"/>
+    </body>
+    <body name="ball-body" pos="6 0 0">
+      <joint name="ball" type="ball" damping="0"/>
+      <geom type="sphere" size="0.1" mass="1" contype="0" conaffinity="0"/>
+    </body>
+  </worldbody>
+</mujocoinclude>

@@ -1,0 +1,20 @@
+<mujoco model="S02 trusted scalar-stage fixture">
+  <compiler angle="radian" meshdir="assets" texturedir="assets"/>
+  <option timestep="0.0625" gravity="0 0 0" integrator="RK4"/>
+  <asset><mesh name="tetra" file="tetra.obj"/><texture name="checker" type="2d" file="two.png"/><material name="mat" texture="checker"/></asset>
+  <include file="parts/body.xml"/>
+  <actuator>
+    <motor name="torque" joint="angle" gear="1" ctrllimited="false" forcelimited="false"/>
+    <motor name="force" joint="translation" gear="1" ctrllimited="false" forcelimited="false"/>
+  </actuator>
+  <sensor>
+    <jointpos name="angle_raw" joint="angle"/>
+    <jointpos name="angle_noise" joint="angle" noise="0.75"/>
+    <jointpos name="angle_delay" joint="angle" nsample="4" delay="0.125" interp="zoh"/>
+    <jointpos name="angle_periodic" joint="angle" nsample="4" interval="0.1875 0"/>
+    <jointpos name="angle_cutoff" joint="angle" cutoff="0.1"/>
+    <jointvel name="angular_velocity" joint="angle"/>
+    <jointpos name="slide_raw" joint="translation"/>
+    <framepos name="tip_position" objtype="site" objname="tip"/>
+  </sensor>
+</mujoco>

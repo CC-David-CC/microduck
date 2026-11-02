@@ -17,7 +17,7 @@ export function createMicroduckController(policy) {
           !sample || sample.capture_tick !== observation.tick || sample.available_tick !== observation.tick) {
         throw new Error('Microduck truth is missing or stale');
       }
-      const result = await policy.evaluate(sample, committedMemory, intent?.speed);
+      const result = await policy.evaluate(sample, committedMemory, intent?.speed, intent?.turn === undefined ? 0 : intent.turn);
       if (disposal) throw new Error('Controller is closed');
       const valid = values => Array.isArray(values) && values.length === 14 &&
         values.every(value => typeof value === 'number' && Number.isFinite(value));

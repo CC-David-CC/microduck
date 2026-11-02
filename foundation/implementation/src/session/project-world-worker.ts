@@ -3,6 +3,8 @@ import {createMujocoWorldFromProject} from '../simulation/mujoco-world.ts';
 import {prepareWorldControllerBindings, bindWorldControllers} from './world-controller-bind.ts';
 import {copyBounded, DataBudgetExceeded} from './project-world-wire.ts';
 import {channelStepBudget} from '../experiments/channel-step-budget.ts';
+import {createCommandBatchRecorder} from '../experiments/command-batch-record.ts';
+import {commandBatchBudget,stepEnvelopeBudget} from '../experiments/command-batch-budget.ts';
 
 type HeldWorld = Awaited<ReturnType<typeof createMujocoWorldFromProject>>['world'];
 type Supervisor = Awaited<ReturnType<typeof bindWorldControllers>>;
@@ -14,6 +16,7 @@ let task: Promise<void> | null = null, portCleanupFailed = false, disposeRequest
 let heldInventory: Awaited<ReturnType<typeof captureProjectInventory>> | null = null;
 let targetPolicy: readonly any[] = [];
 let targetSequence = 0;
+let commandContinuation:{token:string;authority:any;last:any}|null=null;
 let heldControllers: unknown = null, bindingKind: 'stage' | 'reset' | null = null;
 const worker = self as unknown as {postMessage(value: unknown): void; close(): void;
   addEventListener(type: 'message', listener: (event: MessageEvent) => void): void};
@@ -170,7 +173,7 @@ worker.addEventListener('message', event => {
     if (message.identity.session_id !== identity.session_id || message.identity.project_revision !== identity.project_revision ||
         message.identity.run_epoch !== identity.run_epoch) return;
     const resetId = message.request_id, previousSupervisor = supervisor;
-    supervisor = null; state = 'resetting'; requestId = resetId;
+    supervisor = null; commandContinuation=null; state = 'resetting'; requestId = resetId;
     task = (async () => {
       try {
         await previousSupervisor.dispose();
@@ -233,7 +236,7 @@ worker.addEventListener('message', event => {
       const receipt=supervisor.setTarget({...identity,group_id:message.group_id,field:message.field,value:message.value,lease_generation:group.lease.generation});
       send({kind:'target-result',request_id:message.request_id,generation,identity,status:'accepted',target_sequence:message.target_sequence,group_id:receipt.group_id,field:receipt.field,value:receipt.value,lease_generation:receipt.lease_generation,tick:receipt.tick});
     } catch (error) { failure(error); }
-  } else if (message.kind === 'step') {
+  } else if (message.kind === 'step' || message.kind === 'step-recorded') {
     // A step carries no capabilities; reject after discarding any transferred ports.
     if ((event.ports?.length ?? 0) !== 0) return;
     if (disposeRequested || state !== 'ready' || !world || !supervisor ||
@@ -243,35 +246,52 @@ worker.addEventListener('message', event => {
         message.generation !== generation || !exact(message.identity,['session_id','project_revision','run_epoch']) ||
         !Number.isSafeInteger(message.command_sequence) || message.command_sequence !== commandSequence + 1 ||
         !Number.isSafeInteger(message.steps) || message.steps < 1 || message.steps > 64) return;
-    const identity = world.inspect().identity;
+    const initialInspection=world.inspect(),identity=initialInspection.identity,combined=message.kind==='step-recorded';
     if (message.identity.session_id !== identity.session_id || message.identity.project_revision !== identity.project_revision ||
         message.identity.run_epoch !== identity.run_epoch) return;
     const stepRequest = message.request_id, sequence = message.command_sequence, count = message.steps;
     const owner = supervisor, heldWorld = world;
-    const startTick=heldWorld.inspect().plant.tick;
+    const startTick=initialInspection.plant.tick;
     let recording:any=null,recorder:ReturnType<typeof owner.createStepRecorder>|null=null;
+    let commandRecorder:ReturnType<typeof createCommandBatchRecorder>|null=null;
     if(Object.hasOwn(message,'recording')){
       try{
         recording=copyBounded(message.recording,8192);
         if(!exact(recording,['authority','grant','attempt_token'])||typeof recording.attempt_token!=='string'||!recording.attempt_token||recording.attempt_token.length>256)throw Error('Invalid recording request');
         recorder=owner.createStepRecorder({authority:recording.authority,grant:recording.grant},count);
-        if(recorder.channel!==undefined)channelStepBudget({request_id:stepRequest,generation,command_sequence:sequence,identity,start_tick:startTick,steps:count,attempt_token:recording.attempt_token,authority:recording.authority},recorder.channel);
+        const measurementBound=recorder.channel!==undefined ? channelStepBudget({request_id:stepRequest,generation,command_sequence:sequence,identity,start_tick:startTick,steps:count,attempt_token:recording.attempt_token,authority:recording.authority},recorder.channel) : 0;
+        if(combined){
+          if(recorder.channel===undefined||Object.hasOwn(message,'capture_forward_pose'))throw Error('Combined recording requires a channel grant');
+          const a=recording.authority,commandAuthority={...identity,group_id:a.group_id,lease_generation:a.lease_generation},layout=heldWorld.describeControlGroup(a.group_id);
+          const c=commandContinuation,prior=c&&c.token===recording.attempt_token&&c.authority.session_id===identity.session_id&&c.authority.project_revision===identity.project_revision&&c.authority.run_epoch===identity.run_epoch&&c.authority.group_id===a.group_id&&c.authority.lease_generation===a.lease_generation&&c.last?.boundary_tick===startTick-1?c.last:undefined;
+          commandRecorder=createCommandBatchRecorder(commandAuthority,layout,startTick,count,prior);
+          const commandBound=commandBatchBudget(commandAuthority,layout,startTick,count);
+          const envelope={kind:'stepped',request_id:stepRequest,generation,identity,command_sequence:sequence,steps_completed:count,inspection:initialInspection};
+          // Any group may be due at the resulting tick, even if the starting
+          // due list is empty. Reserve all group IDs in addition to the envelope.
+          const dueAllowance=initialInspection.commands.groups.reduce((n:number,row:any)=>n+new TextEncoder().encode(JSON.stringify(row.lease.group_id)).length+1,0);
+          if(stepEnvelopeBudget(envelope)+dueAllowance+measurementBound+commandBound+100>replyLimit)throw Error('Combined response exceeds budget');
+        }
       }catch{try{send({kind:'step-error',request_id:stepRequest,generation,identity,command_sequence:sequence,steps_completed:0,error:'Recording not authorized'});}catch{}return;}
     }
+    if(combined&&!commandRecorder){try{send({kind:'step-error',request_id:stepRequest,generation,identity,command_sequence:sequence,steps_completed:0,error:'Recording not authorized'});}catch{}return;}
+    if(!combined)commandContinuation=null;
     commandSequence = sequence; state = 'stepping';
     task = (async () => {
       let completed = 0;
       try {
         while (completed < count) {
           if (state !== 'stepping') return;
-          if(recorder)await owner.integrateBoundary(recorder);else await owner.integrateBoundary();
+          const receipt=recorder ? await owner.integrateBoundary(recorder) : await owner.integrateBoundary();
           completed++;
+          if(commandRecorder){const group=heldWorld.inspect().commands.groups.find((row:any)=>row.lease.group_id===recording.authority.group_id);commandRecorder.capture(receipt,group);}
           if (state !== 'stepping') return;
         }
         const inspection = heldWorld.inspect();
         const acknowledgment:any = {kind:'stepped',request_id:stepRequest,generation,identity,command_sequence:sequence,
           steps_completed:completed,inspection};
         if(recorder)acknowledgment.measurement_batch={request_id:stepRequest,generation,command_sequence:sequence,identity,start_tick:startTick,steps:count,attempt_token:recording.attempt_token,authority:recording.authority,...(recorder.channel!==undefined?{channel:recorder.channel}:{}),rows:recorder.snapshot().entries};
+        if(commandRecorder)acknowledgment.command_batch=copyBounded(commandRecorder.snapshot(),65536);
         let pose:ReturnType<HeldWorld['forwardVisualFrame']> | null = null;
         if (message.capture_forward_pose === true) {
           try {
@@ -287,12 +307,15 @@ worker.addEventListener('message', event => {
           catch { output = copyBounded(acknowledgment, replyLimit); }
         } else output = copyBounded(acknowledgment, replyLimit);
         worker.postMessage(output);
+        if(commandRecorder)commandContinuation={token:recording.attempt_token,authority:{...identity,group_id:recording.authority.group_id,lease_generation:recording.authority.lease_generation},last:commandRecorder.lastRecord()};
         state = 'ready';
       } catch (error) {
         if (state !== 'stepping') return;
         const errorReply:any={kind:'step-error',request_id:stepRequest,generation,identity,command_sequence:sequence,steps_completed:completed,error:'Controller step failed'};
+        commandContinuation=null;
+        if(commandRecorder)try{const n=commandRecorder.snapshot().rows.length;if(n<count)commandRecorder.markUnknown(startTick+n);errorReply.command_batch=copyBounded(commandRecorder.snapshot(),65536);}catch{}
         if(recorder)try{errorReply.measurement_batch={request_id:stepRequest,generation,command_sequence:sequence,identity,start_tick:startTick,steps:count,attempt_token:recording.attempt_token,authority:recording.authority,...(recorder.channel!==undefined?{channel:recorder.channel}:{}),rows:recorder.snapshot().entries};}catch{}
-        try {send(errorReply);} catch {try{delete errorReply.measurement_batch;send(errorReply);}catch{}}
+        try {send(errorReply);} catch {try{delete errorReply.measurement_batch;delete errorReply.command_batch;send(errorReply);}catch{}}
         failure(error);
       }
     })();

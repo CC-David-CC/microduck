@@ -1,0 +1,11 @@
+diff --git a/wasm/CMakeLists.txt b/wasm/CMakeLists.txt
+--- a/wasm/CMakeLists.txt
++++ b/wasm/CMakeLists.txt
+@@ -35,6 +35,7 @@ set(EMCC_LINKER_FLAGS
+     "-s ALLOW_MEMORY_GROWTH=1"
+     "-s EXPORT_ES6=1"
+     "-s MODULARIZE=1"
++    "-s DYNAMIC_EXECUTION=0"
+     "-s FORCE_FILESYSTEM=1"
+     "-s EXPORTED_RUNTIME_METHODS=['ccall','cwrap','FS','MEMFS']"
+     "-s EXPORT_NAME=loadMujoco"

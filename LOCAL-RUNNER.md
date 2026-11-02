@@ -2,7 +2,7 @@
 
 Microduck runs its controller in a credentialless frame and worker on a different origin. This loopback-only server provides a repeatable **isolated local preview**, not a production service. Do not expose it to the Internet or serve the runner on the desktop identity origin.
 
-After installing the app's locked Node dependencies, obtain the pinned policy and prepare the project and no-eval engine as described in PROJECT-SOURCE.md and LIVE-PLANT-CHECKPOINT.md. Build the desktop app catalog using CodiServer's build-public-apps.py, and build the runner into a new empty directory:
+After installing the app's locked Node dependencies, obtain the pinned policy and prepare the project and retrieve the qualified no-eval engine as described in PROJECT-SOURCE.md. Build the desktop app catalog using CodiServer's build-public-apps.py, and build the runner into a new empty directory:
 
 ```sh
 cd apps/system/microduck

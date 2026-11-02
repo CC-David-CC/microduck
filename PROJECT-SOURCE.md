@@ -33,3 +33,16 @@ attempt encountered the /tmp per-user quota; rerunning with TMPDIR on the
 artifact volume succeeded. The no-eval MuJoCo build remains a separate pinned
 prerequisite, and production runner hosting, CSP, full experiment replay and
 release qualification remain unfinished.
+
+
+## Qualified strict-CSP MuJoCo artifacts
+
+The exact previously qualified no-eval engine files are retained on fleet storage at `[local build host]:[local artifact store]`. Copy that directory to the build machine, then from this app directory after `npm ci` run:
+
+```sh
+MICRODUCK_MUJOCO_NOEVAL=/path/to/copied-qualified-engine node tools/prepare-engine.mjs
+```
+
+The staging tool checks the exact SHA-256 of all three files before writing the local npm package. On 2026-11-02 the files were copied back from [local build host] to [local build host] and staged in an isolated test; a modified file was rejected before any destination change. A local store copy is not a backup guarantee; the earlier original remains separately on [local build host].
+
+The upstream source and no-JavaScript-evaluation patch are documented in `tools/mujoco-noeval.patch`; `tools/build-noeval-engine-candidate.sh` builds a candidate from a separate pinned source checkout and SDK in a new work directory and refuses to call it qualified unless all three original hashes match. Emscripten 4.0.10, CMake, Ninja, Node and npm are needed; CMake/npm may fetch their pinned dependencies. An independent [local build host] rebuild produced a byte-identical JS file and type declarations with compiler path remapping, but the WASM still differed in LLVM-generated function names. Every non-name WASM section matched byte-for-byte in that diagnosis. The candidate is therefore **not accepted** by the hash gate. Exact cross-directory source-build reproducibility remains unresolved; do not silently replace the qualified artifact with that candidate.

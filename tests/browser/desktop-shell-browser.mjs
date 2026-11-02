@@ -1,8 +1,11 @@
 import {chromium} from 'playwright';
+import {readFile} from 'node:fs/promises';
+const ref=JSON.parse(await readFile(new URL('../fixtures/policy-reference.json',import.meta.url))).forward.at(-1);
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 try{
  const page=await browser.newPage({viewport:{width:1366,height:900}}),errors=[];
  page.on('pageerror',e=>errors.push(String(e)));
+ await page.addInitScript(()=>{window.__testEvents=[];const Original=window.Worker;window.Worker=class extends Original{constructor(...args){super(...args);this.addEventListener('message',e=>{if(e.data?.kind==='stepped')window.__testEvents.push(structuredClone(e.data))})}}});
  await page.goto('http://127.0.0.1:19682/');
  await page.waitForSelector('.login-toggle');
  await page.click('.login-toggle');
@@ -43,6 +46,17 @@ try{
  if(!saved.includes('0.25'))throw Error('Saved target missing: '+saved);
  await page.getByRole('button',{name:'Use saved target 0.25'}).click();
  await page.waitForFunction(()=>/Saved target accepted/.test(document.querySelector('[data-brf=saved-target-feedback]')?.textContent??''),null,{timeout:30000});
+ await page.getByRole('spinbutton',{name:'Replay target schedule to step'}).fill('400');
+ await page.getByRole('button',{name:'Replay saved target schedule'}).click();
+ await page.waitForFunction(()=>/Target schedule completed at step 400|Target schedule could not|Target schedule unknown/.test(document.querySelector('[data-brf=saved-target-feedback]')?.textContent??''),null,{timeout:60000});
+ const replay=await page.locator('[data-brf=saved-target-feedback]').textContent();
+ if(!replay.includes('completed at step 400'))throw Error('Replay failed: '+replay);
+ const final=await page.evaluate(()=>window.__testEvents.filter(e=>e.kind==='stepped').at(-1));
+ if(final?.inspection?.plant?.tick!==400)throw Error('Missing replay physics state');
+ const max={qpos:0,qvel:0};
+ for(const k of ['qpos','qvel'])for(let i=0;i<ref[k].length;i++)max[k]=Math.max(max[k],Math.abs(final.inspection.plant[k][i]-ref[k][i]));
+ if(Object.values(max).some(x=>!Number.isFinite(x)||x>1e-6))throw Error('Replay native reference mismatch: '+JSON.stringify(max));
+
 
  await page.locator('.window.focused [aria-label=Close]').click();
  await page.getByRole('dialog').getByRole('button',{name:'Keep editing'}).click();
@@ -51,5 +65,5 @@ try{
  await page.getByRole('dialog').getByRole('button',{name:'Discard changes'}).click();
  await page.waitForFunction(()=>document.querySelectorAll('.window-content.microduck-app').length===0&&document.querySelectorAll('iframe').length===0,null,{timeout:30000});
  if(errors.length)throw Error('Page errors '+JSON.stringify(errors));
- console.log(JSON.stringify({browser:browser.version(),status:'passed',step:1,saved,errors}));
+ console.log(JSON.stringify({browser:browser.version(),status:'passed',step:1,saved,replay,max,errors}));
 }finally{await browser.close()}

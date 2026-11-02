@@ -11,10 +11,10 @@ import {summarizeSavedNotes} from './saved-notes-summary.ts';
 import {inspectGameChallenge} from '../experiments/game-challenge-record.ts';
 
 type OverviewEvent = {kind:'selected';attempt:number;revision:string} | {kind:'overview';attempt:number;revision:string;goal:string|null;welcome:string|null;schematic?:boolean;simpleDuck?:boolean;tutorial?:boolean;turnGoal?:{body:string;min_radians:number}|null;targetLabels?:readonly {group_id:string;field:string;label:string}[]};
-export type ProjectInspectorConfig = {chooseDirectory:()=>Promise<unknown>; folderLimits:ProjectFolderLimits; inventoryLimits:ProjectInventoryLimits; onChoice?:(attempt:number)=>void; onSelectionCleared?:()=>void; captureSessionGame?:(inventory:Readonly<ProjectInventory>)=>{id:string;content:Blob;isCurrent:()=>boolean}|null; captureSessionNotes?:(inventory:Readonly<ProjectInventory>)=>{content:Blob;isCurrent:()=>boolean}|null; captureSessionMeasured?:(inventory:Readonly<ProjectInventory>)=>{id:string;receipt:unknown;isCurrent:()=>boolean}|null; captureSessionTargets?:(inventory:Readonly<ProjectInventory>)=>{id:string;encode:()=>Promise<Blob>;isCurrent:()=>boolean}|null; onOverview?:(event:OverviewEvent)=>void; applySavedTarget?:(inventory:Readonly<ProjectInventory>,target:{group_id:string;field:string;value:number})=>Promise<unknown>};
+export type ProjectInspectorConfig = {chooseDirectory:()=>Promise<unknown>; folderLimits:ProjectFolderLimits; inventoryLimits:ProjectInventoryLimits; onChoice?:(attempt:number)=>void; onSelectionCleared?:()=>void; captureSessionGame?:(inventory:Readonly<ProjectInventory>)=>{id:string;content:Blob;isCurrent:()=>boolean}|null; captureSessionNotes?:(inventory:Readonly<ProjectInventory>)=>{content:Blob;isCurrent:()=>boolean}|null; captureSessionMeasured?:(inventory:Readonly<ProjectInventory>)=>{id:string;receipt:unknown;isCurrent:()=>boolean}|null; captureSessionTargets?:(inventory:Readonly<ProjectInventory>)=>{id:string;encode:()=>Promise<Blob>;isCurrent:()=>boolean}|null; onOverview?:(event:OverviewEvent)=>void; applySavedTarget?:(inventory:Readonly<ProjectInventory>,target:{group_id:string;field:string;value:number})=>Promise<unknown>; replaySavedTargets?:(inventory:Readonly<ProjectInventory>,content:Blob,endTick:number)=>Promise<any>};
 
 /** Inspect selected source bytes; this does not admit, compile or run a project. */
-export function mountProjectInspector({root,chooseDirectory,folderLimits,inventoryLimits,onChoice,onSelectionCleared,captureSessionGame,captureSessionNotes,captureSessionMeasured,captureSessionTargets,onOverview,applySavedTarget}:{root:HTMLElement}&ProjectInspectorConfig) {
+export function mountProjectInspector({root,chooseDirectory,folderLimits,inventoryLimits,onChoice,onSelectionCleared,captureSessionGame,captureSessionNotes,captureSessionMeasured,captureSessionTargets,onOverview,applySavedTarget,replaySavedTargets}:{root:HTMLElement}&ProjectInspectorConfig) {
   if (!root || !root.ownerDocument || typeof root.ownerDocument.createElement!=='function' || typeof root.appendChild!=='function' || typeof chooseDirectory!=='function') throw new Error('Invalid project inspector');
   const limits = <T extends object>(value:T, keys:readonly string[]):T => {
     if (!value || typeof value!=='object' || Array.isArray(value) || ![Object.prototype,null].includes(Object.getPrototypeOf(value)) || Reflect.ownKeys(value).length!==keys.length) throw new Error('Invalid project inspector limits');
@@ -154,6 +154,21 @@ export function mountProjectInspector({root,chooseDirectory,folderLimits,invento
                 },()=>{if(!disposed&&token===generation&&selected===inventory)savedFeedback.textContent='Saved target outcome unknown.';}).finally(()=>{if(!disposed&&token===generation)apply.disabled=false;});
               });
               savedActions.appendChild(apply);
+              if(replaySavedTargets){
+                const label=doc.createElement('label'),end=doc.createElement('input'),replay=doc.createElement('button');
+                label.textContent='Replay target schedule to step ';end.type='number';end.min='1';end.max='4096';end.value='400';end.setAttribute('aria-label','Replay target schedule to step');label.appendChild(end);
+                replay.type='button';replay.textContent='Replay saved target schedule';
+                replay.addEventListener('click',()=>{
+                  if(disposed||token!==generation||selected!==inventory)return;
+                  const tick=Number(end.value);
+                  if(!Number.isSafeInteger(tick)||tick<1||tick>4096){savedFeedback.textContent='Choose an end step from 1 to 4096.';return}
+                  replay.disabled=true;apply.disabled=true;savedFeedback.textContent='Replaying unverified target schedule...';
+                  void replaySavedTargets(inventory,row.content,tick).then(result=>{
+                    if(!disposed&&token===generation&&selected===inventory)savedFeedback.textContent=result?.status==='completed'?'Target schedule completed at step '+result.last_verified_tick+'. This is not full experiment validation.':'Target schedule '+String(result?.status??'unknown')+'; last verified step '+String(result?.last_verified_tick??'unknown')+'.';
+                  },()=>{if(!disposed&&token===generation&&selected===inventory)savedFeedback.textContent='Target schedule could not be replayed.';}).finally(()=>{if(!disposed&&token===generation){replay.disabled=false;apply.disabled=false;}});
+                });
+                savedActions.append(label,replay);
+              }
             }
           }
         } catch {detail='unverified; target details unavailable or incomplete';}

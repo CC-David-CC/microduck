@@ -1,3 +1,4 @@
+import {replayTargetSchedule} from '../../../../replay-target-schedule.mjs';
 import {mountProjectInspector, type ProjectInspectorConfig} from './project-inspector.ts';
 import {createProjectOpener} from './project-opener.ts';
 import {mountSessionShell} from './session-shell.ts';
@@ -233,6 +234,18 @@ export function mountProjectApplication(options: {root: HTMLElement; chooseDirec
   try {
     inspector = mountProjectInspector({root:inspectRoot,chooseDirectory,folderLimits,inventoryLimits,
       onSelectionCleared:()=>{overview=null;syncGoal();update();},
+      replaySavedTargets:async(inventory,content,endTick)=>{
+        const run=active,session=run?.session;
+        if(disposed||!run||run.cancelled||run.phase!=='published'||run.revision!==inventory.project_revision||!session||inspector?.selectedProject!==inventory)throw Error('Saved schedule unavailable');
+        const identity=session.identity;
+        const history=await session.inspectTargetHistory(content,endTick);
+        if(disposed||active!==run||run.cancelled||run.session!==session||inspector?.selectedProject!==inventory||
+          session.identity.session_id!==identity.session_id||session.identity.run_epoch!==identity.run_epoch)throw Error('Session changed during inspection');
+        const result=await replayTargetSchedule(session,history,endTick);
+        if(disposed||active!==run||run.cancelled||run.session!==session||inspector?.selectedProject!==inventory||
+          session.identity.session_id!==identity.session_id||session.identity.run_epoch!==identity.run_epoch)return {status:'unknown',last_verified_tick:result.last_verified_tick};
+        return result;
+      },
       applySavedTarget:async(inventory,target)=>{
         const run=active,session=run?.session;
         if(disposed||!run||run.cancelled||run.phase!=='published'||run.revision!==inventory.project_revision||!session||inspector?.selectedProject!==inventory)throw Error('Saved target unavailable');

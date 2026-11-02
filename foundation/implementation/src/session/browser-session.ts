@@ -1,6 +1,6 @@
 import {captureProjectInventory} from '../projects/project-inventory.ts';
 import {captureProjectTargets} from '../projects/project-target-admission.ts';
-import {encodeExactTargetHistory} from '../experiments/target-history-f64.ts';
+import {encodeExactTargetHistory, inspectExactTargetHistory} from '../experiments/target-history-f64.ts';
 import {safeProjectPath} from '../projects/project-path.ts';
 import {createControlledProjectWorldManager, ResetFault, InspectionFault, OperationBusy, StepFault} from './project-world-manager.ts';
 import {copyBounded} from './project-world-wire.ts';
@@ -78,9 +78,10 @@ type BrowserSession = {
   setTarget(request:unknown):Promise<unknown>;
   targetHistory():Readonly<{entries:readonly Readonly<Record<string,unknown>>[];truncated:boolean}>;
   captureTargetRecord():{id:string;encode:()=>Promise<Blob>;isCurrent:()=>boolean}|null;
+  inspectTargetHistory(content:Blob,maxTick:number):Promise<unknown>;
   readonly assetNotices: readonly unknown[];
   submit(command: unknown): Promise<unknown>;
-  acquireAttempt(): Promise<{step(steps:number):Promise<unknown>; cancel():Promise<void>; finish():Promise<void>}>;
+  acquireAttempt(): Promise<{step(steps:number):Promise<unknown>; setTarget(input:unknown):Promise<unknown>; cancel():Promise<void>; finish():Promise<void>}>;
   startBoundedAttempt(options: unknown): {result: Promise<unknown>; cancel(): Promise<void>};
   startMeasuredAttempt(options: unknown): {result: Promise<unknown>; cancel(): Promise<void>};
   beginVisualMeshRead(): {result: Promise<unknown>; cancel(): Promise<void>};
@@ -107,6 +108,13 @@ function makeHost(manager: any, identity: any, budget: number, assetNotices: rea
     targetVersion++;
     if(targetEntries.length>=4096){targetTruncated=true;return;}
     targetEntries.push(freezeData({identity:copyBounded(identity,budget),group_id:request.group_id,field:request.field,value:request.value,status,tick:status==='accepted'?reply.tick:null,lease_generation:status==='accepted'?reply.lease_generation:null}));
+  }
+  async function inspectTargetHistory(content:Blob,maxTick:number) {
+    if(isDisposed())throw Error('Session disposed');
+    const identity=current;
+    const result=await inspectExactTargetHistory(sourceInventory,targetControllers,content,maxTick);
+    if(isDisposed()||!sameIdentity(current,identity))throw Error('Session changed during target inspection');
+    return result;
   }
   function captureTargetRecord(){
     if(isDisposed())throw Error('Session disposed');if(targetPending)throw Error('Target operation pending');
@@ -241,10 +249,12 @@ function makeHost(manager: any, identity: any, budget: number, assetNotices: rea
 
   function submit(input: unknown): Promise<unknown> { return execute(input, null); }
 
-  function setTarget(input: unknown): Promise<unknown> {
+  function setTarget(input: unknown): Promise<unknown> { return setTargetCore(input,null); }
+
+  function setTargetCore(input: unknown, owner: object | null): Promise<unknown> {
     if (isDisposed()) return Promise.reject(new Error('Session disposed'));
     if (isFaulted()) return Promise.reject(new Error('Session faulted'));
-    if ((state !== 'ready-paused' && state !== 'paused') || attemptOwner || activeCommands || targetPending || meshJob || sceneJob || attributedJob || displayDrawing || displayTasks.size) return Promise.reject(new Error('Session operation is busy or not paused'));
+    if ((state !== 'ready-paused' && state !== 'paused') || attemptOwner !== owner || activeCommands || targetPending || meshJob || sceneJob || attributedJob || displayDrawing || displayTasks.size) return Promise.reject(new Error('Session operation is busy or not paused'));
     let request: any;
     try {
       request = copyBounded(input, 4096);
@@ -283,7 +293,7 @@ function makeHost(manager: any, identity: any, budget: number, assetNotices: rea
     return task;
   }
 
-  function acquireAttemptCore(recording?: any): Promise<{step(steps:number):Promise<unknown>; cancel():Promise<void>; finish():Promise<void>}> {
+  function acquireAttemptCore(recording?: any): Promise<{step(steps:number):Promise<unknown>; setTarget(input:unknown):Promise<unknown>; cancel():Promise<void>; finish():Promise<void>}> {
     if (state === 'disposed') return Promise.reject(new Error('Session disposed'));
     if (state === 'faulted') return Promise.reject(new Error('Session faulted'));
     if (state !== 'ready-paused' && state !== 'paused') return Promise.reject(new Error('Session is not paused'));
@@ -314,7 +324,18 @@ function makeHost(manager: any, identity: any, budget: number, assetNotices: rea
       void execute({kind:'step', ...identity, steps}, owner, recording).then(resolve, reject);
       return task;
     };
-    return Promise.resolve(Object.freeze({step, cancel:finish, finish}));
+    const setLeaseTarget = (input:unknown): Promise<unknown> => {
+      if(closed || state==='disposed' || attemptOwner!==owner)return Promise.reject(new Error('Attempt is closed'));
+      if(state==='faulted')return Promise.reject(new Error('Session faulted'));
+      if(active)return Promise.reject(new Error('Attempt operation is busy'));
+      let resolve!: (value:unknown)=>void, reject!: (reason:unknown)=>void;
+      const task=new Promise<unknown>((yes,no)=>{resolve=yes;reject=no});
+      active=task;
+      void task.then(()=>{if(active===task)active=null;},()=>{if(active===task)active=null;closed=true;release();});
+      void setTargetCore(input,owner).then(resolve,reject);
+      return task;
+    };
+    return Promise.resolve(Object.freeze({step, setTarget:setLeaseTarget, cancel:finish, finish}));
   }
 
   function acquireAttempt() { return acquireAttemptCore(); }
@@ -840,7 +861,7 @@ function makeHost(manager: any, identity: any, budget: number, assetNotices: rea
     return pending;
   }
 
-  return Object.freeze({get identity() { return current; }, get state() { return state; }, assetNotices, recordingChannels, targets, targetHistory, captureTargetRecord, submit, setTarget, acquireAttempt, startBoundedAttempt, startMeasuredAttempt, beginVisualMeshRead, beginVisualMeshAttributeRead, beginPartialSceneRead, beginAttributedSceneRead, inspect, readVisual, readVisualFacts, readVisualGroups, listenSchematicFrames, attachDisplay, attachAttributedDisplay, dispose});
+  return Object.freeze({get identity() { return current; }, get state() { return state; }, assetNotices, recordingChannels, targets, targetHistory, captureTargetRecord, inspectTargetHistory, submit, setTarget, acquireAttempt, startBoundedAttempt, startMeasuredAttempt, beginVisualMeshRead, beginVisualMeshAttributeRead, beginPartialSceneRead, beginAttributedSceneRead, inspect, readVisual, readVisualFacts, readVisualGroups, listenSchematicFrames, attachDisplay, attachAttributedDisplay, dispose});
 }
 
 /** Constructs one admitted, paused browser session. Reset keeps the same Worker

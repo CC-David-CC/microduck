@@ -27,4 +27,7 @@ test('truth grant matches the actual compiled project revision',async()=>{
  assert.equal(report.revision,'5ead0e42f7e44efb865941852fc8ecf93f8348ae4f1f48d2b27808713ff989d6');
  assert.equal(report.channel.definition_sha256,profile.controllers[0].grants[0].definition_sha256);
  assert.equal(report.channel.definition_sha256,profile.policy.approvedGrants[0].definition_sha256);
+ const recording=profile.policy.approvedRecordingGrants[0];assert.equal(recording.project_revision,report.revision);assert.equal(recording.group_id,'all');assert.equal(recording.max_entries,64);
+ assert.deepEqual(recording.channel,report.channel);assert.deepEqual(recording.definition,report.definition);
+
 });

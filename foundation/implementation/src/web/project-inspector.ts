@@ -177,6 +177,15 @@ export function mountProjectInspector({root,chooseDirectory,folderLimits,invento
           const count=checked.measurement?.entries.length??0;
           const description=checked.measurement?.channel ? `${checked.measurement.channel.kind} channel; source definition included; ` : '';
           detail=`unverified; ${checked.receipt.status}; ${description}${count} samples; last verified tick ${checked.receipt.last_verified_tick??'unknown'}`;
+          if(checked.measurement?.channel && count && !disposed && token===generation){
+            const saved=checked.measurement,details=doc.createElement('details'),summary=doc.createElement('summary'),legend=doc.createElement('p'),label=doc.createElement('label'),index=doc.createElement('input'),sample=doc.createElement('pre');
+            details.setAttribute('data-brf','saved-measurement-detail');summary.textContent='Inspect saved truth samples';
+            legend.textContent='Unverified '+saved.channel.id+'; '+saved.definition.layout.map((part:any)=>`${part.name} (${part.size}, ${part.unit}, ${part.stage})`).join(' | ');
+            label.textContent='Sample index ';index.type='number';index.min='0';index.max=String(count-1);index.step='1';index.value='0';index.setAttribute('aria-label','Saved sample index');sample.setAttribute('data-brf','saved-measurement-sample');sample.style.whiteSpace='pre-wrap';sample.style.overflowWrap='anywhere';
+            const updateSample=()=>{if(disposed||token!==generation)return;const i=Number(index.value);if(!Number.isSafeInteger(i)||i<0||i>=count){sample.textContent='Choose an available sample index.';return;}
+              const row=saved.entries[i],v=row.sample;sample.textContent=`Tick ${row.observed_tick}; validity ${v.validity}; captured ${v.capture_tick??'unknown'}; available ${v.available_tick??'unknown'}; outcome ${row.outcome}.\nValues: [${v.values.map((x:number)=>Object.is(x,-0)?'-0':String(x)).join(', ')}]`;};
+            index.addEventListener('input',updateSample);label.appendChild(index);details.append(summary,legend,label,sample);updateSample();savedActions.appendChild(details);
+          }
         } catch {detail='unverified; details unavailable';}
       }
       lines.push(`${row.id} (${row.kind}): ${detail}`);

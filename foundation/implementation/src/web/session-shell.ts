@@ -1,4 +1,4 @@
-import {createSimpleDuckView} from '../display/simple-duck.ts';
+import {createPublishedDuckView} from '../display/published-duck-view.ts';
 import {createSurfaceHost} from './session-surface-host.ts';
 import {mountSavedMeasurementComparison} from './saved-measurement-comparison-ui.ts';
 import type {ProjectInventoryLimits} from '../projects/project-inventory.ts';
@@ -31,7 +31,7 @@ type Session = {
 };
 
 /** Mount presentation around an existing caller-owned session. */
-export function mountSessionShell({root, session, projectInspector, comparisonInventoryLimits}:{root:HTMLElement; session:Session; projectInspector?:ProjectInspectorConfig; comparisonInventoryLimits?:ProjectInventoryLimits}) {
+export function mountSessionShell({root, session, projectInspector, comparisonInventoryLimits, publishedDuckAssetURL}:{root:HTMLElement; session:Session; projectInspector?:ProjectInspectorConfig; comparisonInventoryLimits?:ProjectInventoryLimits; publishedDuckAssetURL?:string}) {
   if (!root || !root.ownerDocument || typeof root.ownerDocument.createElement !== 'function' ||
       typeof root.appendChild !== 'function' || !session || typeof session.submit !== 'function' ||
       !session.identity || typeof session.identity.session_id !== 'string' ||
@@ -67,10 +67,11 @@ export function mountSessionShell({root, session, projectInspector, comparisonIn
   const canvas=make('canvas','display-canvas') as HTMLCanvasElement;
   canvas.hidden=true;
   const schematicButton=make('button','show-schematic','Show body schematic') as HTMLButtonElement;schematicButton.type='button';schematicButton.hidden=true;
-  const duckButton=make('button','show-simple-duck','Show simple duck') as HTMLButtonElement;duckButton.type='button';duckButton.hidden=true;
+  const duckButton=make('button','show-published-duck','Show Microduck') as HTMLButtonElement;duckButton.type='button';duckButton.hidden=true;
   const schematicStatus=make('p','schematic-status','Schematic unavailable.');schematicStatus.setAttribute('role','status');schematicStatus.hidden=true;
   const schematicCanvas=make('canvas','schematic-canvas') as HTMLCanvasElement;schematicCanvas.hidden=true;schematicCanvas.setAttribute('aria-label','Simplified simulated body and links');schematicCanvas.style.maxWidth='100%';
-  viewport.append(showDisplay,refreshDisplay,displayStatus,canvas,schematicButton,duckButton,schematicStatus,schematicCanvas);
+  const duckCanvas=make('canvas','microduck-canvas') as HTMLCanvasElement;duckCanvas.hidden=true;duckCanvas.setAttribute('aria-label','Simulated Microduck robot');duckCanvas.style.maxWidth='100%';
+  viewport.append(showDisplay,refreshDisplay,displayStatus,canvas,schematicButton,duckButton,schematicStatus,schematicCanvas,duckCanvas);
   const playPane=make('section','play-pane');
   const researchPane=make('section','research-pane');
   playPane.setAttribute('aria-label','Game mode');
@@ -129,7 +130,7 @@ export function mountSessionShell({root, session, projectInspector, comparisonIn
   let vectorSnapshot:VectorSnapshot|null=null, referenceSnapshot:VectorSnapshot|null=null;
   const clear=(message:string) => {vectorSnapshot=null;pinBaseline.disabled=true;comparison.textContent=referenceSnapshot?'Current snapshot unavailable.':'No reference snapshot.';vectorsPrevious.disabled=true;vectorsNext.disabled=true;vectorsPage.textContent='No paused snapshot.';playFeedback.textContent=message;researchFeedback.textContent=message;authorityFeedback.textContent=message;};
   let displayGeneration=0;
-  const invalidate=()=>{generation++;displayGeneration++;canvas.hidden=true;schematicCanvas.hidden=true;if(schematicEnabled)schematicStatus.textContent='Pause and refresh the body schematic.';displayStatus.textContent='Display unavailable. Pause and refresh.';clear('Snapshot unavailable. Pause and try again.');};
+  const invalidate=()=>{generation++;displayGeneration++;canvas.hidden=true;schematicCanvas.hidden=true;duckCanvas.hidden=true;if(schematicEnabled)schematicStatus.textContent='Pause and refresh the body schematic.';displayStatus.textContent='Display unavailable. Pause and refresh.';clear('Snapshot unavailable. Pause and try again.');};
   const same=(a:Session['identity'],b:Session['identity']) => !!a && !!b && a.session_id===b.session_id && a.project_revision===b.project_revision && a.run_epoch===b.run_epoch;
   const targetCleanup:Array<()=>void>=[];const targetLabelNodes:Array<{group_id:string;field:string;min:number;max:number;exact:HTMLElement;slider:HTMLElement}>=[];let targetBusy=false;
   if(Array.isArray(session.targets) && typeof session.setTarget==='function' && session.targets.length) {
@@ -390,24 +391,35 @@ export function mountSessionShell({root, session, projectInspector, comparisonIn
     playAssetNotices.textContent=text;researchAssetNotices.textContent=text;
   };
   renderAssetNotices();
-  let schematicEnabled=false,schematicRequested=false,stopSchematic:(()=>void)|null=null;let representation:'schematic'|'duck'='schematic';const duckView=createSimpleDuckView(schematicCanvas);const drawSelected=(model:any,frame:any)=>{if(representation==='duck')duckView.draw(model,frame);else drawBodySchematic(schematicCanvas,model,frame)};const viewName=()=>representation==='duck'?'Simple duck':'Body schematic';
-  const setSchematic=(enabled:boolean,duck=false)=>{const any=enabled||duck;if(schematicEnabled!==any){schematicEnabled=any;generation++;schematicCanvas.hidden=true;if(!any){schematicRequested=false;stopSchematic?.();stopSchematic=null;}}schematicButton.hidden=!enabled;duckButton.hidden=!duck;schematicStatus.hidden=!any;if(any&&!schematicCanvas.hidden)schematicStatus.hidden=false;};
+  let schematicEnabled=false,schematicRequested=false,stopSchematic:(()=>void)|null=null;
+  let representation:'schematic'|'duck'='schematic';
+  const duckView=publishedDuckAssetURL ? createPublishedDuckView(duckCanvas,publishedDuckAssetURL) : null;
+  const viewName=()=>representation==='duck'?'Microduck':'Body schematic';
+  const hideViews=()=>{schematicCanvas.hidden=true;duckCanvas.hidden=true;};
+  const setSchematic=(enabled:boolean,duck=false)=>{duck=duck&&!!duckView;const any=enabled||duck;if(schematicEnabled!==any){schematicEnabled=any;generation++;hideViews();if(!any){schematicRequested=false;stopSchematic?.();stopSchematic=null;}}schematicButton.hidden=!enabled;duckButton.hidden=!duck;schematicStatus.hidden=!any;};
+  const paintFrame=async(model:any,frame:any,version:number,id:Session['identity'])=>{
+    const selected=representation;
+    if(selected==='duck'){if(!duckView)throw Error('Microduck visual unavailable');await duckView.draw(model,frame);}
+    else drawBodySchematic(schematicCanvas,model,frame);
+    if(disposed||!schematicEnabled||version!==generation||selected!==representation||!same(id,session.identity))return;
+    schematicCanvas.hidden=selected!=='schematic';duckCanvas.hidden=selected!=='duck';schematicStatus.textContent=`${viewName()}, step ${frame.tick}.`;
+  };
   const onSchematic=()=>{if(disposed||!schematicEnabled||!paused()||typeof session.readVisualFacts!=='function')return;schematicRequested=true;const version=generation,id={...session.identity};schematicStatus.textContent='Reading body positions.';
-    void session.readVisualFacts().then((value:any)=>{if(disposed||!schematicEnabled||version!==generation||!paused()||!same(id,session.identity)||!same(id,value?.identity))return;
-      if(value.status!=='partial')throw Error('Schematic unavailable');drawSelected(value.model,value.frame);schematicCanvas.hidden=false;schematicStatus.textContent=`${viewName()}, step ${value.frame.tick}.`;
+    void session.readVisualFacts().then(async(value:any)=>{if(disposed||!schematicEnabled||version!==generation||!paused()||!same(id,session.identity)||!same(id,value?.identity))return;
+      if(value.status!=='partial')throw Error('Body view unavailable');await paintFrame(value.model,value.frame,version,id);
+      if(disposed||version!==generation||!same(id,session.identity))return;
       stopSchematic?.();stopSchematic=null;
       if(typeof session.listenSchematicFrames==='function') {
         const model=value.model;
         try {stopSchematic=session.listenSchematicFrames((pose:any)=>{
           if(disposed||!schematicEnabled||!same(id,session.identity))return;
-          if(pose?.status!=='available'||!same(id,pose.identity)){schematicCanvas.hidden=true;schematicStatus.textContent='Live schematic unavailable.';return;}
-          try {drawSelected(model,pose.frame);schematicCanvas.hidden=false;schematicStatus.textContent=`${viewName()}, step ${pose.frame.tick}.`;}
-          catch {schematicCanvas.hidden=true;schematicStatus.textContent='Live schematic unavailable.';}
+          if(pose?.status!=='available'||!same(id,pose.identity)){hideViews();schematicStatus.textContent='Live body view unavailable.';return;}
+          const liveVersion=generation;void paintFrame(model,pose.frame,liveVersion,id).catch(()=>{if(!disposed&&liveVersion===generation){hideViews();schematicStatus.textContent='Live body view unavailable.';}});
         });} catch {schematicStatus.textContent=`${viewName()}, step ${value.frame.tick}. Live updates unavailable.`;}
       }
-    }).catch(()=>{if(!disposed&&version===generation){schematicCanvas.hidden=true;schematicStatus.textContent='Body schematic unavailable.';}});
+    }).catch(()=>{if(!disposed&&version===generation){hideViews();schematicStatus.textContent=representation==='duck'?'Microduck visual unavailable.':'Body schematic unavailable.';}});
   };
-  const onShowSchematic=()=>{representation='schematic';generation++;onSchematic()};const onShowDuck=()=>{representation='duck';generation++;onSchematic()};schematicButton.addEventListener('click',onShowSchematic);duckButton.addEventListener('click',onShowDuck);
+  const onShowSchematic=()=>{representation='schematic';generation++;hideViews();onSchematic()};const onShowDuck=()=>{representation='duck';generation++;hideViews();onSchematic()};schematicButton.addEventListener('click',onShowSchematic);duckButton.addEventListener('click',onShowDuck);
   function resetTurnChallenge(){turnSerial++;turnBaseline=null;turnOutcome=null;turnGoal=null;turnStart.hidden=true;turnCheck.hidden=true;turnFeedback.hidden=true;}
   function syncTurnButtons(){if(turnBaseline&&!same(turnBaseline.identity,session.identity)){turnBaseline=null;turnOutcome=null;turnFeedback.textContent='Start the challenge again.';}turnStart.hidden=!turnGoal;turnCheck.hidden=!turnGoal;turnFeedback.hidden=!turnGoal;turnStart.disabled=turnBusy||!paused();turnCheck.disabled=turnBusy||!paused()||!turnBaseline;}
   function readTurnPose(value:any,id:Session['identity'],body:string){
@@ -472,7 +484,7 @@ export function mountSessionShell({root, session, projectInspector, comparisonIn
     if(!nextTurn||!turnGoal||nextTurn.body!==turnGoal.body||nextTurn.min_radians!==turnGoal.min_radians||!sessionMatches(selectionAuthority)){resetTurnChallenge();turnGoal=nextTurn;if(turnGoal)turnFeedback.textContent='Start the challenge when you are ready.';}
     selectionAuthority={attempt:value.attempt,session_id:value.session_id,project_revision:value.project_revision};
     tutorialEnabled=!!tutorialField&&Object.hasOwn(tutorialField,'value')&&tutorialField.value===true;selectedGoal=value.goal;selectedWelcome=welcomeField?.value ?? null;setSchematic(schematicField?.value===true,duckField?.value===true);updateGoal();
-    if(duckField?.value===true && schematicEnabled && !schematicRequested && sessionMatches(selectionAuthority)){representation='duck';onSchematic();}
+    if(duckField?.value===true && duckView && schematicEnabled && !schematicRequested && sessionMatches(selectionAuthority)){representation='duck';onSchematic();}
   };
   const onChoice=(attempt:number)=>{
     const id=session.identity;
@@ -590,7 +602,7 @@ export function mountSessionShell({root, session, projectInspector, comparisonIn
   const retireShell=()=>{
     disposed=true;generation++;displayGeneration++;
     for (const action of [
-      ()=>{canvas.hidden=true;schematicCanvas.hidden=true;},
+      ()=>{canvas.hidden=true;schematicCanvas.hidden=true;duckCanvas.hidden=true;duckView?.dispose();},
       ()=>{schematicButton.removeEventListener('click',onShowSchematic);duckButton.removeEventListener('click',onShowDuck);},
       ()=>{stopSchematic?.();stopSchematic=null;},
       ()=>inspector?.dispose(),

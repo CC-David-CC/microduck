@@ -1,0 +1,161 @@
+{
+  "upstream_revision": "ad9d41a763f30dc770817c33d92dcfec0205db1e",
+  "rig": {
+    "bytes": 26666,
+    "sha256": "099c64fa03280514eed881accf563061a640eb7800d5ce15be5af92d1f63d38b"
+  },
+  "meshes": {
+    "ankle_left.stl": {
+      "bytes": 58284,
+      "sha256": "df5d7f04d63390a1e263e0138ee94e1aec2ff2b55cf63729f4ec461b25c1c1f0"
+    },
+    "ankle_right.stl": {
+      "bytes": 51584,
+      "sha256": "48b8551a13d22cc8752ddf3148796b357a6cbd6e2ecbd93c3ecdfbf55e533e72"
+    },
+    "banana_pcb_locker.stl": {
+      "bytes": 11634,
+      "sha256": "2e51f6e23e4dbea660a9dbadcd763bbc77d48a7e3e0a58f047eab45554e07b55"
+    },
+    "bearing_roll.stl": {
+      "bytes": 30284,
+      "sha256": "fa0da0a5eef428a41da6e9639f75120781594e600c5db7518621750221669849"
+    },
+    "bottom_head_shell.stl": {
+      "bytes": 231334,
+      "sha256": "331a361406e77c05256e5064197f785ac1e9c8f091079a3519c2e33f28ae5ebc"
+    },
+    "elec_rpi_robot_hat_pcb.stl": {
+      "bytes": 225434,
+      "sha256": "acc66b75f2ff26f42339577c38c6f348ec73c4fbb52912637ba5244eb1a78ebb"
+    },
+    "face_part.stl": {
+      "bytes": 136784,
+      "sha256": "47ad1137a68bf72b2c93f1bf4836f18fb9a8d21a4f8f86fbe761b9871233fcce"
+    },
+    "foot_left.stl": {
+      "bytes": 241934,
+      "sha256": "b7749b1f4fd9e7faf8180772d7ce8254139c60bc43aee463ec76afc86212d59c"
+    },
+    "foot_right.stl": {
+      "bytes": 246084,
+      "sha256": "e2aba02ec1b949bc8a5a77ad3d0af9009dee80c100aa4bbfcf336f1fa5ef206f"
+    },
+    "hip_l.stl": {
+      "bytes": 229134,
+      "sha256": "dbdf6e7f5587385c0f6a77b407931b30e81c9a212dac7c52b4e0884156049056"
+    },
+    "jaw.stl": {
+      "bytes": 120834,
+      "sha256": "90afa64e47ef237f0f58d6f4830dc3cd6215328ed8a639b1e1a9eb2157307f4a"
+    },
+    "jaw_soft.stl": {
+      "bytes": 84084,
+      "sha256": "6c3ebb578ea5e6d7b995baca9b42ef7c9f9858b56dedf6f0d949f5e6ea9d3ef2"
+    },
+    "left_shell.stl": {
+      "bytes": 256334,
+      "sha256": "c31e71e2e55c5daccfef738c80053104ba2fb3589a0836ab1b6ebb5c380a05ae"
+    },
+    "leg.stl": {
+      "bytes": 166434,
+      "sha256": "bfbc6ae5faefc56bd65d860cf3410a08e8286717063584f15b56bbd5302b20f8"
+    },
+    "lens.stl": {
+      "bytes": 23484,
+      "sha256": "b9b86fce70198040781a739e2c15d2996b549b25d73b7544005ae08a415b486e"
+    },
+    "m12_lens_holder.stl": {
+      "bytes": 98334,
+      "sha256": "d96825a096d5d3d5d252086cf0cdb3f5bc22d9f0baef0a3f97a85bae1617be99"
+    },
+    "motor_support.stl": {
+      "bytes": 45284,
+      "sha256": "d6725004f0a85a5cf0161214ea0d39fb6f14ee3563c9a96cd5aad725b5e2a716"
+    },
+    "neck.stl": {
+      "bytes": 18384,
+      "sha256": "3cb654ee9387d55c7d10d40fc84bb7cbf3cedb3243d1da499cf01c54d366079c"
+    },
+    "neck_pitch.stl": {
+      "bytes": 85284,
+      "sha256": "dbd6fcbf8b8f27a8364d5bcae2b9a537d7e384325b44a653b360139b6fa1da2f"
+    },
+    "noenoeil.stl": {
+      "bytes": 12384,
+      "sha256": "55f3167627f6fbd1a19966f92396adf2ccd55795b13ded3b9f52705ba8a7ab77"
+    },
+    "np_f970.stl": {
+      "bytes": 247734,
+      "sha256": "01fbacc788b53ebb7648cda07090133b8c696da31d700c560f45189494977871"
+    },
+    "pcb__raspberry_pi_zero_2_w.stl": {
+      "bytes": 262184,
+      "sha256": "43d8368ced3d623eaa5ef538e8361f5878b85931b7cd469a4488eee7aa00bd91"
+    },
+    "power_support.stl": {
+      "bytes": 128234,
+      "sha256": "4aee9ddf8c12478d334f3d8d9e65af712072bef241283a08c895606fc2e3d9e8"
+    },
+    "right_shell.stl": {
+      "bytes": 256384,
+      "sha256": "c346581c2e3c2c189ea49372a147dfbc0dca89db4ec02f9f230921e480e762a7"
+    },
+    "seeed_bearing__configuration__22x16x4.stl": {
+      "bytes": 260134,
+      "sha256": "8551dc99cbdc012bd261c2a175f2cc766dd6aed0786781b35f8381cd3aa95b34"
+    },
+    "seeed_bearing__configuration_default.stl": {
+      "bytes": 260084,
+      "sha256": "e4338e0e6c7adeb52a35e02d6fa5babe761e8752ffa0fc2e31b0ba672c18630d"
+    },
+    "soft_mouth_top.stl": {
+      "bytes": 98384,
+      "sha256": "451f53d30350552cb6e26f777698272f7c3fa557f389adb24f94c75a201e67cd"
+    },
+    "sole_left.stl": {
+      "bytes": 197384,
+      "sha256": "357f80bb46855e3ce50f817705acd80471dae90b4ee6b4a0a948614a7daeddb1"
+    },
+    "sole_right.stl": {
+      "bytes": 198684,
+      "sha256": "07801107a36dbc1c2b83b3b64ad98be39ba662a8a7fa0b62a29119b201f41fe6"
+    },
+    "speaker.stl": {
+      "bytes": 684,
+      "sha256": "0ef54df86c6093c166d73e33dc0b8364ef5643a7a1b1dacaba577be5a9c06c32"
+    },
+    "top_head_shell.stl": {
+      "bytes": 194984,
+      "sha256": "a59823b8f2ab23d530e6b071559f7fd308851ae035b7cb4d0b7baf7edef4b3e3"
+    },
+    "trunk_base.stl": {
+      "bytes": 38734,
+      "sha256": "4b84ebe28041e6236ecafd4a26cebe537e21c14423e6acded3d78478c7650ed7"
+    },
+    "upper_leg_left.stl": {
+      "bytes": 133134,
+      "sha256": "a626dafcdd0074fd4e79e604d377495d304d222f1afd27b13487b7248b35a0b8"
+    },
+    "upper_leg_right.stl": {
+      "bytes": 124434,
+      "sha256": "97fd516a4c0e593fef9e22b1521d60ca86bd91966a4328db0834bac5ba1cabdf"
+    },
+    "upper_leg_rigidity_plate.stl": {
+      "bytes": 45084,
+      "sha256": "96e50158d44ef97fc46f5d6330b6bb02fb93116790ae892a170fdd052e696aba"
+    },
+    "xl330.stl": {
+      "bytes": 45584,
+      "sha256": "d3c7b71750397083d3dfbad395fd8ac794763f43e2ea2b5006da5840c976fc82"
+    },
+    "yaw2roll.stl": {
+      "bytes": 119884,
+      "sha256": "c20cbdd8a9d52f789ec5a4b0d4a173a225652c6bc4610d555ea309c7a0e0d559"
+    },
+    "yaw_roll_motion.stl": {
+      "bytes": 62184,
+      "sha256": "ae3740fde29a261b79650a25825baedd84d538fc67b6b20b79589125e5e05592"
+    }
+  }
+}

@@ -64,8 +64,8 @@ export function getTrustedOpeningConfiguration(): TrustedConfiguration | null {
 
 export function mountProjectApplication(options: {root: HTMLElement; chooseDirectory: ProjectInspectorConfig['chooseDirectory'];
   folderLimits: ProjectInspectorConfig['folderLimits']; inventoryLimits: ProjectInspectorConfig['inventoryLimits'];
-  resolveTrusted: Resolver | null; onSessionPublished?:()=>void; compactPresentation?:boolean}) {
-  const {root, chooseDirectory, folderLimits, inventoryLimits, resolveTrusted, onSessionPublished, compactPresentation=false} = options;
+  resolveTrusted: Resolver | null; onSessionPublished?:()=>void; compactPresentation?:boolean; publishedDuckAssetURL?:string}) {
+  const {root, chooseDirectory, folderLimits, inventoryLimits, resolveTrusted, onSessionPublished, compactPresentation=false, publishedDuckAssetURL} = options;
   if (!root || !root.ownerDocument || typeof root.appendChild !== 'function' ||
       typeof chooseDirectory !== 'function' || (resolveTrusted !== null && typeof resolveTrusted !== 'function')) {
     throw new Error('Invalid project application');
@@ -210,7 +210,7 @@ export function mountProjectApplication(options: {root: HTMLElement; chooseDirec
         const selectedAfterOpen = inspector?.selectedProject;
         if (disposed || run.cancelled || active !== run || selectedAfterOpen !== selected) throw new Error('Selection changed');
         run.phase = 'mounting';
-        run.shell = mountSessionShell({root:shellRoot,session,comparisonInventoryLimits:inventoryLimits});
+        run.shell = mountSessionShell({root:shellRoot,session,comparisonInventoryLimits:inventoryLimits,publishedDuckAssetURL});
         if (disposed || run.cancelled || active !== run) throw new Error('Selection changed');
         const selectedAfterMount = inspector?.selectedProject;
         if (disposed || run.cancelled || active !== run || selectedAfterMount !== selected) throw new Error('Selection changed');

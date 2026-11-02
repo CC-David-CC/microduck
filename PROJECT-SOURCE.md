@@ -10,7 +10,7 @@ Apache-2.0; the included assets/MICRODUCK-LICENSE.txt retains its license.
 Obtain the pinned public source into a suitable artifact volume, for example
 using the Hugging Face CLI:
 
-    hf download pollen-robotics/microduck-simulator --type space --revision ad9d41a763f30dc770817c33d92dcfec0205db1e --include 'app/public/robot/mjlab/meshes/*.stl' --local-dir /path/to/space
+    hf download pollen-robotics/microduck-simulator --type space --revision ad9d41a763f30dc770817c33d92dcfec0205db1e --include 'app/public/robot/mjlab/meshes/*.stl' --include 'app/public/robot/mjlab/kinematics.json' --local-dir /path/to/space
     hf download pollen-robotics/microduck-policies alpha_walking.onnx --revision 665ae4eb20bfe13bca1ef4ea6d4bb6b4a096e448 --local-dir /path/to/policy
 
 Prepare the generated asset after npm ci (the destination must not exist):
@@ -46,3 +46,13 @@ MICRODUCK_MUJOCO_NOEVAL=/path/to/copied-qualified-engine node tools/prepare-engi
 The staging tool checks the exact SHA-256 of all three files before writing the local npm package. On 2026-11-02 the files were copied back from [local build host] to [local build host] and staged in an isolated test; a modified file was rejected before any destination change. A local store copy is not a backup guarantee; the earlier original remains separately on [local build host].
 
 The upstream source and no-JavaScript-evaluation patch are documented in `tools/mujoco-noeval.patch`; `tools/build-noeval-engine-candidate.sh` builds a candidate from a separate pinned source checkout and SDK in a new work directory and refuses to call it qualified unless all three original hashes match. Emscripten 4.0.10, CMake, Ninja, Node and npm are needed; CMake/npm may fetch their pinned dependencies. An independent [local build host] rebuild produced a byte-identical JS file and type declarations with compiler path remapping, but the WASM still differed in LLVM-generated function names. Every non-name WASM section matched byte-for-byte in that diagnosis. The candidate is therefore **not accepted** by the hash gate. Exact cross-directory source-build reproducibility remains unresolved; do not silently replace the qualified artifact with that candidate.
+
+## Published Microduck display rig
+
+The desktop build also needs the pinned visual rig. From the same pinned Space checkout used above, assemble the generated app asset (the destination must not exist):
+
+```sh
+MICRODUCK_SPACE_DIR=/path/to/space MICRODUCK_VISUAL_OUTPUT=assets/microduck-visual.json node tools/prepare-microduck-visual.mjs
+```
+
+The tool checks the rig and each of its 38 STL meshes against `tools/microduck-visual-manifest.json`. It produces a 6,743,770-byte inert display asset with SHA-256 `ee72047f7773cf2c9ae4f975db38921947bc11a4cb3ef242ed25227d6a452abd`. The app checks the exact digest before rendering. The visual rig follows named simulation bodies; it does not change the model, policy or robot observations. See `PUBLISHED-VISUAL-CHECKPOINT.md` for evidence and differences.

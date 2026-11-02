@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {registerHooks} from 'node:module';
 registerHooks({resolve(specifier,ctx,next){
+ if(specifier.endsWith('.css'))return {shortCircuit:true,url:'data:text/javascript,export default {}'};
  if(specifier.endsWith('/web/project-application.ts'))return {shortCircuit:true,url:'data:text/javascript,export function mountProjectApplication(o){return globalThis.__microduckTest.mount(o)}'};
  return next(specifier,ctx);
 }});

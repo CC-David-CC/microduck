@@ -1,3 +1,4 @@
+import './style.css';
 import {mountProjectApplication} from './foundation/implementation/src/web/project-application.ts';
 import profile from './microduck-profile.json' with {type:'json'};
 import {createFileActions} from './file-actions.mjs';
@@ -23,7 +24,7 @@ export function mount(host) {
  save.type='button';open.type='button';save.textContent='Save to My files';open.textContent='Open from My files';fileStatus.setAttribute('role','status');
  const grantButton=document.createElement('button'),grantStatus=document.createElement('p');
  grantButton.type='button';grantButton.textContent='Allow agent drive';grantButton.disabled=true;grantStatus.setAttribute('role','status');grantStatus.textContent='Agent drive is off.';
- files.append(save,open,fileStatus,grantButton,grantStatus);body.append(status,files,root);
+ files.className='microduck-files';root.className='microduck-content';files.append(save,open,fileStatus,grantButton,grantStatus);body.append(status,files,root);
  const abort=new AbortController();let disposed=false,application=null;
  const driveGrant=createDriveGrant(()=>application?.getDriveSession());let granted=false,unregister=null;
  if(host.commands){unregister=host.commands.register({id:'set-walk-speed',description:'Request the Microduck walk speed when the person has enabled agent drive.',parameters:{type:'object',required:['speed'],properties:{speed:{type:'number',minimum:0,maximum:0.25}},additionalProperties:false}},args=>driveGrant.drive(args))}
@@ -46,7 +47,7 @@ export function mount(host) {
    if(await digest(bytes)!==PROJECT_HASH)throw Error('Built-in project integrity check failed');
    if(disposed||host.signal?.aborted)return;
    const decision={project_revision:REVISION,...structuredClone(profile),runnerOrigin:origin,frameURL:origin+'/frame',policy:{...structuredClone(profile.policy),wasmUrl:new URL('./node_modules/@mujoco/mujoco/mujoco.wasm',import.meta.url).href}};
-   application=mountProjectApplication({root,chooseDirectory:()=>typeof window.showDirectoryPicker==='function'?window.showDirectoryPicker():Promise.reject(Error('Folder selection unavailable')),folderLimits:{max_files:512,max_file_bytes:16777216,max_total_bytes:67108864,max_depth:32,max_path_length:240},inventoryLimits:decision.policy.inventoryLimits,resolveTrusted:r=>r===REVISION?structuredClone(decision):null,onSessionPublished:()=>{if(!disposed){resetGrant();grantButton.disabled=!host.commands;if(host.w)host.w.microduck={dirty:true}}}});
+   application=mountProjectApplication({root,compactPresentation:true,chooseDirectory:()=>typeof window.showDirectoryPicker==='function'?window.showDirectoryPicker():Promise.reject(Error('Folder selection unavailable')),folderLimits:{max_files:512,max_file_bytes:16777216,max_total_bytes:67108864,max_depth:32,max_path_length:240},inventoryLimits:decision.policy.inventoryLimits,resolveTrusted:r=>r===REVISION?structuredClone(decision):null,onSessionPublished:()=>{if(!disposed){status.textContent='Microduck ready.';resetGrant();grantButton.disabled=!host.commands;if(host.w)host.w.microduck={dirty:true}}}});
    if(disposed||host.signal?.aborted){const owned=application;application=null;await owned.dispose();return}
    application.openFile(new File([bytes],'microduck.brf',{type:'application/json'}));
    status.textContent='Opening Microduck...';

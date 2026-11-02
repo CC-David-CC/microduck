@@ -1,0 +1,19 @@
+/* Presentation only: both surfaces operate on the same session. */
+.microduck-app {box-sizing:border-box; padding:12px; overflow:auto; color:#263544; background:#f4f7fa; font:14px/1.4 system-ui,sans-serif;}
+.microduck-app p {margin:5px 0;}
+.microduck-app button, .microduck-app input {font:inherit;}
+.microduck-app button {padding:5px 10px; border:1px solid #9aa9b6; border-radius:6px; background:#fff; color:#263544; cursor:pointer;}
+.microduck-app button:disabled {cursor:default; opacity:.55;}
+.microduck-app button:focus-visible, .microduck-app summary:focus-visible {outline:3px solid #386e9e; outline-offset:2px;}
+.microduck-app .microduck-files {display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin-bottom:8px;}
+.microduck-app .microduck-files p:empty {display:none;}
+.microduck-app [data-brf=app-runner] {position:absolute; width:1px; height:1px; overflow:hidden; opacity:0; pointer-events:none;}
+.microduck-app [data-brf=app-runner] iframe {width:1px; height:1px; border:0;}
+.microduck-app [data-brf=toolbar] {display:flex; flex-wrap:wrap; gap:6px; margin:6px 0;}
+.microduck-app [data-brf=target-panel] {margin:8px 0;}
+.microduck-app [data-brf=target-panel] h2 {font-size:16px; margin:4px 0;}
+.microduck-app [data-brf=schematic-canvas] {display:block; width:min(100%,620px); height:auto; border-radius:10px;}
+.microduck-app [hidden] {display:none !important;}
+.microduck-app [data-brf=project-details] {margin-top:12px; border-top:1px solid #d4dde4; padding-top:8px; overflow-wrap:anywhere;}
+.microduck-app summary {cursor:pointer; font-weight:600;}
+.microduck-app [data-brf=research-pane] {overflow-wrap:anywhere;}

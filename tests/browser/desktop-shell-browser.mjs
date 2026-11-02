@@ -22,6 +22,11 @@ try{
  await page.waitForSelector('.window-content.microduck-app',{timeout:30000});
  await page.waitForFunction(()=>document.querySelector('[data-brf=app-status]')?.textContent==='Project open.',null,{timeout:90000});
  await page.waitForFunction(()=>/Simple duck, step 0/.test(document.querySelector('[data-brf=schematic-status]')?.textContent??'') && !document.querySelector('[data-brf=schematic-canvas]')?.hidden,null,{timeout:15000});
+ const visible=await page.locator('[data-brf=schematic-canvas]').evaluate(c=>{const r=c.getBoundingClientRect(),w=c.closest('.window-content').getBoundingClientRect();return {left:r.left,top:r.top,right:r.right,bottom:r.bottom,windowTop:w.top,windowBottom:w.bottom,screenHeight:innerHeight}});
+ if(visible.top<visible.windowTop||visible.bottom>Math.min(visible.windowBottom,visible.screenHeight))throw Error('Duck is outside the visible app window: '+JSON.stringify(visible));
+ const frameVisible=await page.locator('[data-brf=app-runner] iframe').evaluate(e=>{const r=e.getBoundingClientRect();return r.width>5&&r.height>5});
+ if(frameVisible)throw Error('Runner frame is visibly taking up the app window');
+ if(process.env.MICRODUCK_GAME_SCREENSHOT)await page.screenshot({path:process.env.MICRODUCK_GAME_SCREENSHOT});
  const initialImage=await page.locator('[data-brf=schematic-canvas]').evaluate(c=>c.toDataURL());
  const agent=async speed=>page.evaluate(async speed=>{const registry=await publicCommandRegistry();const command=registry.list().find(x=>x.appId==='microduck'&&x.id==='set-walk-speed');if(!command)throw Error('Agent command missing');return registry.execute({windowId:command.windowId,command:command.id,args:{speed}})},speed);
  let denied=false;try{await agent(.2)}catch{denied=true}if(!denied)throw Error('Agent command allowed without grant');
@@ -38,9 +43,26 @@ try{
  const runningView=await page.locator('[data-brf=schematic-status]').textContent();
  await page.locator('[data-brf=pause]').click();
  await page.waitForFunction(()=>document.querySelector('[data-brf=status]')?.textContent==='Paused',null,{timeout:30000});
+ await page.getByRole('button',{name:'Hardware tuning mode'}).click();
+ await page.getByRole('button',{name:'Refresh readings'}).click();
+ await page.waitForFunction(()=>/Paused snapshot: step [1-9]/.test(document.querySelector('[data-brf=research-feedback]')?.textContent??''),null,{timeout:30000});
+ const research=await page.locator('[data-brf=research-feedback]').textContent();
+ for(const label of ['Plant position:','plant velocity:','commanded input:','raw simulated sensors:'])if(!research.includes(label))throw Error('Research reading missing '+label+': '+research);
+ const authority=await page.locator('[data-brf=authority-feedback]').textContent();
+ if(!authority.includes('Group 1:'))throw Error('Research controller group missing: '+authority);
+ if(process.env.MICRODUCK_DESKTOP_SCREENSHOT)await page.screenshot({path:process.env.MICRODUCK_DESKTOP_SCREENSHOT});
  await page.getByRole('button',{name:'Save to My files'}).click();
  await page.getByRole('dialog',{name:'Choose folder in My files'}).getByRole('button',{name:'Use this folder'}).click();
  await page.waitForFunction(()=>document.body.textContent.includes('Saved locally:'),null,{timeout:30000});
+ const saveStatus=await page.locator('.microduck-app').innerText();
+ await page.reload();
+ await page.waitForSelector('.login-form');
+ await page.locator('[aria-label=Username]').fill(user);
+ await page.locator('[aria-label=Password]').fill('test-password-123');
+ await page.locator('.login-form button[type=submit]').click();
+ await page.waitForFunction(()=>window.desktopLab?.session?.kind==='registered',null,{timeout:30000});
+ await page.waitForSelector('.window-content.microduck-app',{timeout:30000});
+ await page.waitForFunction(()=>document.querySelector('[data-brf=app-status]')?.textContent==='Project open.',null,{timeout:90000});
  await page.getByRole('button',{name:'Open from My files'}).click();
  await page.getByRole('dialog').getByRole('button',{name:'Continue'}).click();
  await page.getByRole('dialog',{name:'Choose from My files'}).getByRole('button',{name:'Choose file Microduck.brf'}).click();
@@ -48,6 +70,7 @@ try{
  await page.waitForFunction(()=>document.querySelector('[data-brf=app-status]')?.textContent==='Project open.',null,{timeout:30000});
  const saved=await page.locator('[data-brf=saved-records]').textContent();
  if(!saved.includes('0.25'))throw Error('Saved target missing: '+saved);
+ await page.getByText('Project and experiments',{exact:true}).click();
  await page.getByRole('button',{name:'Use saved target 0.25'}).click();
  await page.waitForFunction(()=>/Saved target accepted/.test(document.querySelector('[data-brf=saved-target-feedback]')?.textContent??''),null,{timeout:30000});
  await page.getByRole('spinbutton',{name:'Replay target schedule to step'}).fill('400');
@@ -69,5 +92,5 @@ try{
  await page.getByRole('dialog').getByRole('button',{name:'Discard changes'}).click();
  await page.waitForFunction(()=>document.querySelectorAll('.window-content.microduck-app').length===0&&document.querySelectorAll('iframe').length===0,null,{timeout:30000});
  if(errors.length)throw Error('Page errors '+JSON.stringify(errors));
- console.log(JSON.stringify({browser:browser.version(),status:'passed',runningView,saved,replay,max,errors}));
+ console.log(JSON.stringify({browser:browser.version(),status:'passed',runningView,research,authority,saveStatus:saveStatus.match(/Saved locally:[^\n]*/)?.[0],saved,replay,max,errors}));
 }finally{await browser.close()}

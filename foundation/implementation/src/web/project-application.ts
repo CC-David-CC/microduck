@@ -64,8 +64,8 @@ export function getTrustedOpeningConfiguration(): TrustedConfiguration | null {
 
 export function mountProjectApplication(options: {root: HTMLElement; chooseDirectory: ProjectInspectorConfig['chooseDirectory'];
   folderLimits: ProjectInspectorConfig['folderLimits']; inventoryLimits: ProjectInspectorConfig['inventoryLimits'];
-  resolveTrusted: Resolver | null; onSessionPublished?:()=>void}) {
-  const {root, chooseDirectory, folderLimits, inventoryLimits, resolveTrusted, onSessionPublished} = options;
+  resolveTrusted: Resolver | null; onSessionPublished?:()=>void; compactPresentation?:boolean}) {
+  const {root, chooseDirectory, folderLimits, inventoryLimits, resolveTrusted, onSessionPublished, compactPresentation=false} = options;
   if (!root || !root.ownerDocument || typeof root.appendChild !== 'function' ||
       typeof chooseDirectory !== 'function' || (resolveTrusted !== null && typeof resolveTrusted !== 'function')) {
     throw new Error('Invalid project application');
@@ -80,7 +80,12 @@ export function mountProjectApplication(options: {root: HTMLElement; chooseDirec
   start.textContent='Start project'; close.textContent='Close project'; status.setAttribute('role','status');
   status.textContent=resolveTrusted ? 'Inspect a project to start.' : 'Opening requires trusted host configuration.';
   activeSource.textContent='No open session.';
-  container.append(inspectRoot,start,close,status,activeSource,runnerRoot,shellRoot);
+  if (compactPresentation) {
+    const details=doc.createElement('details'),summary=doc.createElement('summary');
+    details.setAttribute('data-brf','project-details');summary.textContent='Project and experiments';
+    details.append(summary,inspectRoot,start,close,activeSource);
+    container.append(runnerRoot,status,shellRoot,details);
+  } else container.append(inspectRoot,start,close,status,activeSource,runnerRoot,shellRoot);
   let inspector: ReturnType<typeof mountProjectInspector> | null = null;
   let active: Run | null = null, disposed = false, failed = false, disposal: Promise<void> | null = null;
   let overview:Goal|null = null, autoAttempt:number|null = null;

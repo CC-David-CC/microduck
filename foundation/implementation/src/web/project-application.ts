@@ -283,5 +283,26 @@ export function mountProjectApplication(options: {root: HTMLElement; chooseDirec
     if(disposed || failed || active || !inspector || !resolveTrusted)throw Error('Project application unavailable');
     autoAttempt=inspector.selectFile(file);
   }
-  return Object.freeze({openFile,dispose});
+  async function captureFile() {
+    if(disposed || failed || !inspector || !active || active.phase!=='published')throw Error('Project capture unavailable');
+    return inspector.captureFile();
+  }
+  let replacing=false;
+  async function replaceFile(file:File,isCurrent:()=>boolean=()=>true) {
+    if(disposed || failed || replacing || typeof isCurrent!=='function')throw Error('Project replacement unavailable');
+    replacing=true;
+    try {
+      const run=active;
+      if(run) {
+        cancelOpening(run);
+        try {await clean(run)} catch {failed=true;throw Error('Project cleanup failed')}
+        if(disposed || (active && active!==run))throw Error('Project changed during replacement');
+        if(active===run)active=null;
+        update();
+      }
+      if(disposed || !isCurrent())throw Error('Project replacement canceled');
+      openFile(file);
+    } finally {replacing=false}
+  }
+  return Object.freeze({openFile,replaceFile,captureFile,dispose});
 }

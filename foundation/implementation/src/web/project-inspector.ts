@@ -185,26 +185,37 @@ export function mountProjectInspector({root,chooseDirectory,folderLimits,invento
     const file=fileInput.files?.[0];fileInput.value='';if(!file)return;
     try{selectFile(file)}catch{if(!disposed)status.textContent='Unable to inspect saved project file.';}
   };
-  const onExport=()=>{
-    if(disposed||exportActive||!selected)return;
-    const inventory=selected,token=generation,records=loadedRecords.slice();exportActive=true;syncExport();exportStatus.textContent='Preparing project download.';
-    void (async()=>{try{
+  async function captureFile(){
+    if(disposed||exportActive||!selected)throw Error('Project capture unavailable');
+    const inventory=selected,token=generation,records=loadedRecords.slice();exportActive=true;syncExport();
+    try{
       const game=captureSessionGame?.(inventory)??null,notes=captureSessionNotes?.(inventory)??null,measured=captureSessionMeasured?.(inventory)??null,targets=captureSessionTargets?.(inventory)??null;
       if(game){const index=records.findIndex(row=>row.id===game.id);if(index>=0)records.splice(index,1);records.push({id:game.id,kind:'game',content:game.content});}
       if(notes){const index=records.findIndex(row=>row.id==='session-attempt-notes');if(index>=0)records.splice(index,1);records.push({id:'session-attempt-notes',kind:'research',content:notes.content});}
       if(measured){const content=await encodeMeasuredAttemptRecord(measured.receipt,131072);const index=records.findIndex(row=>row.id===measured.id);if(index>=0)records.splice(index,1);records.push({id:measured.id,kind:'research',content});}
       if(targets){const content=await targets.encode();const index=records.findIndex(row=>row.id===targets.id);if(index>=0)records.splice(index,1);records.push({id:targets.id,kind:'research',content});}
       const blob=await encodeExperimentFile(inventory,records,{max_bundle_bytes:67108864,max_records:8,max_record_bytes:1048576,max_total_record_bytes:2097152,inventory:inventoryCaps});
-      if(disposed||token!==generation||selected!==inventory||(notes&&!notes.isCurrent())||(measured&&!measured.isCurrent())||(targets&&!targets.isCurrent())||(game&&!game.isCurrent()))return;
+      const isCurrent=()=>!disposed&&token===generation&&selected===inventory&&
+        (!notes||notes.isCurrent())&&(!measured||measured.isCurrent())&&
+        (!targets||targets.isCurrent())&&(!game||game.isCurrent());
+      if(!isCurrent())throw Error('Project changed during capture');
+      return Object.freeze({blob,isCurrent});
+    }finally{exportActive=false;if(!disposed)syncExport();}
+  }
+  const onExport=()=>{
+    if(disposed||exportActive||!selected)return;
+    exportStatus.textContent='Preparing project download.';
+    void captureFile().then(({blob,isCurrent})=>{
+      if(!isCurrent())return;
       const url=URL.createObjectURL(blob);exportUrls.add(url);const link=doc.createElement('a');link.href=url;link.download='robot-project.brf';doc.body.appendChild(link);
       try {link.click();exportStatus.textContent='Project download started. Saved records remain unverified.';} finally {link.remove();setTimeout(()=>{URL.revokeObjectURL(url);exportUrls.delete(url)},1000);}
-    }catch{if(!disposed&&token===generation&&selected===inventory)exportStatus.textContent='Unable to export project.';}finally{exportActive=false;if(!disposed)syncExport();}})();
+    }).catch(()=>{if(!disposed)exportStatus.textContent='Unable to export project.';});
   };
   exportButton.addEventListener('click',onExport);
   fileInput.addEventListener('change',onFile);
   button.addEventListener('click',onChoose);
   try {root.appendChild(container);} catch(error) {button.removeEventListener('click',onChoose);fileInput.removeEventListener('change',onFile);container.remove();throw error;}
-  return Object.freeze({get selectedProject(){return selected;},selectFile,dispose(){
+  return Object.freeze({get selectedProject(){return selected;},selectFile,captureFile,dispose(){
     if (disposed) return;
     disposed=true;generation++;queuedOverview=null;queuedFile=null;loadedRecords=[];for(const url of exportUrls)URL.revokeObjectURL(url);exportUrls.clear();exportButton.removeEventListener('click',onExport);acquisition?.abort();button.removeEventListener('click',onChoose);fileInput.removeEventListener('change',onFile);container.remove();
   }});

@@ -12,7 +12,7 @@ if(!file)throw Error('MICRODUCK_BUILTIN_PROJECT required');
 const project=await readFile(file);
 class Element {
  constructor(){this.children=[];this.textContent='';this.className='';this.attributes={};}
- append(...nodes){this.children.push(...nodes)} setAttribute(k,v){this.attributes[k]=v}
+ append(...nodes){this.children.push(...nodes)} setAttribute(k,v){this.attributes[k]=v} addEventListener(){}
 }
 const tick=()=>new Promise(r=>setTimeout(r,10));
 test('desktop mount loads the verified project and closes its owned application once',async()=>{

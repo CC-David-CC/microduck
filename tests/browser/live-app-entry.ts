@@ -13,3 +13,9 @@ const app=mountProjectApplication({root,chooseDirectory:()=>Promise.reject(new E
  const file=new File([await response.arrayBuffer()],'microduck.brf',{type:'application/json'});
  return (app as any).openFile(file);
 };
+
+(window as any).captureBuiltInProject=async()=>{
+ const snapshot=await (app as any).captureFile();
+ const data=JSON.parse(await snapshot.blob.text());
+ return {current:snapshot.isCurrent(),format:data.format,records:data.records.map((x:any)=>x.id)};
+};

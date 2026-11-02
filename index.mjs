@@ -1,5 +1,6 @@
 import {mountProjectApplication} from './foundation/implementation/src/web/project-application.ts';
 import profile from './microduck-profile.json' with {type:'json'};
+import {createFileActions} from './file-actions.mjs';
 
 const REVISION='5ead0e42f7e44efb865941852fc8ecf93f8348ae4f1f48d2b27808713ff989d6';
 const PROJECT_HASH='b32639fc7783f4d1f249f17ed458faf8b9e65ab3cbbdbfdcd844179265a18a82';
@@ -16,8 +17,15 @@ async function digest(bytes){return Array.from(new Uint8Array(await crypto.subtl
 
 export function mount(host) {
  const body=document.createElement('div'),status=document.createElement('p'),root=document.createElement('div');
- body.className='window-content microduck-app';status.setAttribute('role','status');status.textContent='Preparing Microduck...';body.append(status,root);
+ body.className='window-content microduck-app';status.setAttribute('role','status');status.textContent='Preparing Microduck...';
+ const files=document.createElement('div'),save=document.createElement('button'),open=document.createElement('button'),fileStatus=document.createElement('p');
+ save.type='button';open.type='button';save.textContent='Save to My files';open.textContent='Open from My files';fileStatus.setAttribute('role','status');
+ files.append(save,open,fileStatus);body.append(status,files,root);
  const abort=new AbortController();let disposed=false,application=null;
+ const actions=host.storage?createFileActions(host,()=>application,()=>!disposed):null;
+ save.disabled=!actions;open.disabled=!actions;
+ save.addEventListener('click',()=>{if(!actions)return;fileStatus.textContent='Saving project...';void actions.saveAs().then(result=>{if(!disposed&&result)fileStatus.textContent=result.current?'Saved locally: '+result.path+' ('+result.status+').':'An earlier snapshot was saved; the current session has changed.'},error=>{if(!disposed)fileStatus.textContent='Save failed: '+String(error?.message||error)})});
+ open.addEventListener('click',()=>{if(!actions)return;void (async()=>{try{if(typeof host.ui?.confirm!=='function')throw Error('Open confirmation unavailable');const confirmed=await host.ui.confirm('Open a saved project? Unsaved session changes will be closed.',{title:'Open Microduck project',signal:host.signal});if(!confirmed||disposed)return;fileStatus.textContent='Opening project...';const result=await actions.open();if(!disposed&&result)fileStatus.textContent='Opened '+result.path+'. Saved records are unverified.'}catch(error){if(!disposed)fileStatus.textContent='Open failed: '+String(error?.message||error)}})()});
  const stop=()=>{if(disposed)return;disposed=true;abort.abort();host.signal?.removeEventListener('abort',stop);if(application){const owned=application;application=null;void owned.dispose().catch(error=>console.error('Microduck cleanup failed',error))}};
  host.signal?.addEventListener('abort',stop,{once:true});
  queueMicrotask(()=>{void (async()=>{

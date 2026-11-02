@@ -472,6 +472,7 @@ export function mountSessionShell({root, session, projectInspector, comparisonIn
     if(!nextTurn||!turnGoal||nextTurn.body!==turnGoal.body||nextTurn.min_radians!==turnGoal.min_radians||!sessionMatches(selectionAuthority)){resetTurnChallenge();turnGoal=nextTurn;if(turnGoal)turnFeedback.textContent='Start the challenge when you are ready.';}
     selectionAuthority={attempt:value.attempt,session_id:value.session_id,project_revision:value.project_revision};
     tutorialEnabled=!!tutorialField&&Object.hasOwn(tutorialField,'value')&&tutorialField.value===true;selectedGoal=value.goal;selectedWelcome=welcomeField?.value ?? null;setSchematic(schematicField?.value===true,duckField?.value===true);updateGoal();
+    if(duckField?.value===true && schematicEnabled && !schematicRequested && sessionMatches(selectionAuthority)){representation='duck';onSchematic();}
   };
   const onChoice=(attempt:number)=>{
     const id=session.identity;

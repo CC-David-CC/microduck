@@ -21,8 +21,8 @@ try{
  await page.getByRole('menuitem',{name:'Microduck',exact:true}).click();
  await page.waitForSelector('.window-content.microduck-app',{timeout:30000});
  await page.waitForFunction(()=>document.querySelector('[data-brf=app-status]')?.textContent==='Project open.',null,{timeout:90000});
- await page.locator('[data-brf=show-simple-duck]').click();
- await page.waitForFunction(()=>/Simple duck, step 0/.test(document.querySelector('[data-brf=schematic-status]')?.textContent??''));
+ await page.waitForFunction(()=>/Simple duck, step 0/.test(document.querySelector('[data-brf=schematic-status]')?.textContent??'') && !document.querySelector('[data-brf=schematic-canvas]')?.hidden,null,{timeout:15000});
+ const initialImage=await page.locator('[data-brf=schematic-canvas]').evaluate(c=>c.toDataURL());
  const agent=async speed=>page.evaluate(async speed=>{const registry=await publicCommandRegistry();const command=registry.list().find(x=>x.appId==='microduck'&&x.id==='set-walk-speed');if(!command)throw Error('Agent command missing');return registry.execute({windowId:command.windowId,command:command.id,args:{speed}})},speed);
  let denied=false;try{await agent(.2)}catch{denied=true}if(!denied)throw Error('Agent command allowed without grant');
  await page.getByRole('button',{name:'Allow agent drive'}).click();
@@ -31,9 +31,13 @@ try{
  denied=false;try{await agent(.2)}catch{denied=true}if(!denied)throw Error('Revoked agent command allowed');
  await page.locator('[data-brf=target-value]').fill('0.25');await page.locator('[data-brf=target-set]').click();
  await page.waitForFunction(()=>/Target request accepted/.test(document.querySelector('[data-brf=target-feedback]')?.textContent??''));
+ await page.locator('[data-brf=run]').click();
+ await page.waitForFunction(()=>document.querySelector('[data-brf=status]')?.textContent==='Running',null,{timeout:30000});
  await page.getByRole('button',{name:'Hardware tuning mode'}).click();await page.getByRole('button',{name:'Game mode'}).click();
- await page.locator('[data-brf=step]').click();
- await page.waitForFunction(()=>/step 1/.test(document.querySelector('[data-brf=schematic-status]')?.textContent??''),null,{timeout:30000});
+ await page.waitForFunction(initial=>{const text=document.querySelector('[data-brf=schematic-status]')?.textContent??'';const canvas=document.querySelector('[data-brf=schematic-canvas]');return Number(text.match(/step (\d+)/)?.[1]??0)>=20 && canvas && !canvas.hidden && canvas.toDataURL()!==initial},initialImage,{timeout:60000});
+ const runningView=await page.locator('[data-brf=schematic-status]').textContent();
+ await page.locator('[data-brf=pause]').click();
+ await page.waitForFunction(()=>document.querySelector('[data-brf=status]')?.textContent==='Paused',null,{timeout:30000});
  await page.getByRole('button',{name:'Save to My files'}).click();
  await page.getByRole('dialog',{name:'Choose folder in My files'}).getByRole('button',{name:'Use this folder'}).click();
  await page.waitForFunction(()=>document.body.textContent.includes('Saved locally:'),null,{timeout:30000});
@@ -65,5 +69,5 @@ try{
  await page.getByRole('dialog').getByRole('button',{name:'Discard changes'}).click();
  await page.waitForFunction(()=>document.querySelectorAll('.window-content.microduck-app').length===0&&document.querySelectorAll('iframe').length===0,null,{timeout:30000});
  if(errors.length)throw Error('Page errors '+JSON.stringify(errors));
- console.log(JSON.stringify({browser:browser.version(),status:'passed',step:1,saved,replay,max,errors}));
+ console.log(JSON.stringify({browser:browser.version(),status:'passed',runningView,saved,replay,max,errors}));
 }finally{await browser.close()}

@@ -29,7 +29,7 @@ test('desktop mount loads the verified project and closes its owned application 
   assert.ok(selected instanceof File);
   options.onSessionPublished();assert.equal(windowState.microduck.dirty,true);
   assert.equal(selected.size,project.length);
-  assert.equal((await options.resolveTrusted('5ead0e42f7e44efb865941852fc8ecf93f8348ae4f1f48d2b27808713ff989d6')).runnerOrigin,'https://runner.example');
+  assert.equal((await options.resolveTrusted('0183b6ea156fbb779121ecdb9b4c0ee205cdfec652eb427c4326b1064868ac2a')).runnerOrigin,'https://runner.example');
   assert.equal(await options.resolveTrusted('a'.repeat(64)),null);
   view.dispose();view.dispose();await tick();assert.equal(closed,1);windowState.microduck.dirty=false;options.onSessionPublished();assert.equal(windowState.microduck.dirty,false);
  }finally{globalThis.document=oldDoc;globalThis.fetch=oldFetch;delete globalThis.__microduckTest}

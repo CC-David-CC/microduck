@@ -34,8 +34,8 @@ try{
  await page.locator('[data-brf=show-simple-duck]').click();
  await page.waitForFunction(()=>/Simple duck, step 0/.test(document.querySelector('[data-brf=schematic-status]')?.textContent??''),null,{timeout:30000});
  await page.locator('[data-brf=schematic-canvas]').screenshot({path:evidence+'.initial.png'});
- await page.locator('[data-brf=target-value]').fill('0.25');
- await page.locator('[data-brf=target-set]').click();
+ await page.locator('[data-brf=target-row]').first().locator('[data-brf=target-value]').fill('0.25');
+ await page.locator('[data-brf=target-row]').first().locator('[data-brf=target-set]').click();
  await page.waitForFunction(()=>/Target request accepted/.test(document.querySelector('[data-brf=target-feedback]')?.textContent??''));
  const before=await page.evaluate(()=>window.__testCommands.slice());
  await page.getByRole('button',{name:'Hardware tuning mode'}).click();

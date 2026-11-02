@@ -7,7 +7,7 @@ const run=(source,out)=>spawnSync(process.execPath,[tool],{encoding:'utf8',env:{
 test('reconstructs the exact pinned project without a previous test fixture',async t=>{
  const dir=await mkdtemp(join(tmpdir(),'microduck-source-'));t.after(()=>rm(dir,{recursive:true,force:true}));const out=join(dir,'project.json'),p=run(space,out);
  assert.equal(p.status,0,p.stderr);const data=await readFile(out);
- assert.equal(createHash('sha256').update(data).digest('hex'),'b32639fc7783f4d1f249f17ed458faf8b9e65ab3cbbdbfdcd844179265a18a82');
+ assert.equal(createHash('sha256').update(data).digest('hex'),'7bed18ccb5ee0da8d6939f8ce43fb4272fea35b82f357f0be4db92d28b4b63f2');
 });
 test('rejects altered upstream mesh before producing a project',async t=>{
  const dir=await mkdtemp(join(tmpdir(),'microduck-tamper-'));t.after(()=>rm(dir,{recursive:true,force:true}));const mesh=join(dir,'app/public/robot/mjlab/meshes');await mkdir(mesh,{recursive:true});

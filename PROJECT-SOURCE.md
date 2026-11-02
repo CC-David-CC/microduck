@@ -1,5 +1,7 @@
 # Microduck built-in project source
 
+The current built-in steering-enabled project revision is `0183b6ea156fbb779121ecdb9b4c0ee205cdfec652eb427c4326b1064868ac2a` and its generated file SHA-256 is `7bed18ccb5ee0da8d6939f8ce43fb4272fea35b82f357f0be4db92d28b4b63f2`. The old reconstruction hash below documents the earlier speed-only version. Its saved projects are not admitted by the current single-revision trusted opener.
+
 The tracked project-source directory contains the derivative MuJoCo scene,
 experience text, target declaration and exact manifest used in the live
 Microduck tests. The scene is a derivative, not a verbatim copy of the

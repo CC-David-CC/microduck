@@ -10,7 +10,7 @@ const space=process.env.MICRODUCK_SPACE_DIR, policy=process.env.MICRODUCK_POLICY
 if(!space||!policy||!output)throw Error('MICRODUCK_SPACE_DIR, MICRODUCK_POLICY and MICRODUCK_BUILTIN_PROJECT required');
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 const manifestBytes=await readFile(resolve(root,'project-source/manifest.json'));
-if(hash(manifestBytes)!=='5ead0e42f7e44efb865941852fc8ecf93f8348ae4f1f48d2b27808713ff989d6')throw Error('Project source manifest mismatch');
+if(hash(manifestBytes)!=='0183b6ea156fbb779121ecdb9b4c0ee205cdfec652eb427c4326b1064868ac2a')throw Error('Project source manifest mismatch');
 const manifest=JSON.parse(manifestBytes),files=new Map([['manifest.json',manifestBytes]]);
 for(const [name,meta] of Object.entries(manifest.files)){
  let bytes;
@@ -24,6 +24,6 @@ for(const [name,meta] of Object.entries(manifest.files)){
 }
 const project={format:'brf-project-experiment/1',files:[...files].sort(([a],[b])=>a<b?-1:a>b?1:0).map(([path,data])=>({path,data_base64:data.toString('base64')})),records:[]};
 const result=Buffer.from(JSON.stringify({...project,checksum:hash(JSON.stringify(project))}));
-if(hash(result)!=='b32639fc7783f4d1f249f17ed458faf8b9e65ab3cbbdbfdcd844179265a18a82')throw Error('Generated project mismatch');
+if(hash(result)!=='7bed18ccb5ee0da8d6939f8ce43fb4272fea35b82f357f0be4db92d28b4b63f2')throw Error('Generated project mismatch');
 await writeFile(output,result,{flag:'wx'});
 console.log(JSON.stringify({projectRevision:hash(manifestBytes),projectHash:hash(result),bytes:result.length}));

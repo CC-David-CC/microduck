@@ -1,4 +1,4 @@
-// This capability grants one high-level target, never direct actuator access.
+// This capability grants declared high-level targets, never direct actuator access.
 export function createDriveGrant(getSession) {
  if(typeof getSession!=='function')throw Error('Session provider required');
  let grant=null,version=0;
@@ -15,10 +15,12 @@ export function createDriveGrant(getSession) {
   async drive(input){
    if(!grant)throw Error('Agent drive grant required');
    if(!input||typeof input!=='object'||Array.isArray(input)||![Object.prototype,null].includes(Object.getPrototypeOf(input))||Reflect.ownKeys(input).length!==1)throw Error('Invalid drive request');
-   const value=Object.getOwnPropertyDescriptor(input,'speed');
-   if(!value||!Object.hasOwn(value,'value')||!value.enumerable||typeof value.value!=='number'||!Number.isFinite(value.value)||value.value<0||value.value>.25)throw Error('Invalid drive target');
+   const field=Reflect.ownKeys(input)[0];
+   if(field!=='speed'&&field!=='turn')throw Error('Invalid drive target');
+   const value=Object.getOwnPropertyDescriptor(input,field),min=field==='speed'?0:-1,max=field==='speed'?.25:1;
+   if(!value||!Object.hasOwn(value,'value')||!value.enumerable||typeof value.value!=='number'||!Number.isFinite(value.value)||value.value<min||value.value>max)throw Error('Invalid drive target');
    const {session,id}=grant,token=version;if(!current(session,id,token))throw Error('Agent drive grant expired');
-   try{const result=await session.setTarget({group_id:'all',field:'speed',value:value.value});if(!current(session,id,token))return {status:'unknown'};return result}
+   try{const result=await session.setTarget({group_id:'all',field,value:value.value});if(!current(session,id,token))return {status:'unknown'};return result}
    catch(error){if(!current(session,id,token))return {status:'unknown'};throw error}
   }
  });

@@ -1,1 +1,1 @@
-{"schema_version":1,"targets":[{"group_id":"all","field":"speed","min":0,"max":0.25}]}
+{"schema_version":1,"targets":[{"group_id":"all","field":"speed","min":0,"max":0.25},{"group_id":"all","field":"turn","min":-1,"max":1}]}

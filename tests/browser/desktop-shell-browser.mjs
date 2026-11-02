@@ -41,7 +41,7 @@ try{
  const agentReply=await agent(.2);if(agentReply.status!=='accepted')throw Error('Agent target was not accepted');
  await page.getByRole('button',{name:'Turn off agent drive'}).click();
  denied=false;try{await agent(.2)}catch{denied=true}if(!denied)throw Error('Revoked agent command allowed');
- await page.locator('[data-brf=target-value]').fill('0.25');await page.locator('[data-brf=target-set]').click();
+ await page.locator('[data-brf=target-row]').first().locator('[data-brf=target-value]').fill('0.25');await page.locator('[data-brf=target-row]').first().locator('[data-brf=target-set]').click();
  await page.waitForFunction(()=>/Target request accepted/.test(document.querySelector('[data-brf=target-feedback]')?.textContent??''));
  await page.locator('[data-brf=run]').click();
  await page.waitForFunction(()=>document.querySelector('[data-brf=status]')?.textContent==='Running',null,{timeout:30000});

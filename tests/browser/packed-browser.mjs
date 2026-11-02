@@ -15,8 +15,8 @@ try{
  if(status!=='Project open.')throw Error('Packaged desktop app failed: '+status+' '+JSON.stringify(errors));
  await page.locator('[data-brf=show-simple-duck]').click();
  await page.waitForFunction(()=>/Simple duck, step 0/.test(document.querySelector('[data-brf=schematic-status]')?.textContent??''));
- await page.locator('[data-brf=target-value]').fill('0.25');
- await page.locator('[data-brf=target-set]').click();
+ await page.locator('[data-brf=target-row]').first().locator('[data-brf=target-value]').fill('0.25');
+ await page.locator('[data-brf=target-row]').first().locator('[data-brf=target-set]').click();
  await page.waitForFunction(()=>/Target request accepted/.test(document.querySelector('[data-brf=target-feedback]')?.textContent??''));
  await page.getByRole('button',{name:'Hardware tuning mode'}).click();
  await page.getByRole('button',{name:'Game mode'}).click();

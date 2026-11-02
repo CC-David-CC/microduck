@@ -12,7 +12,7 @@ try{
  await page.waitForFunction(()=>typeof window.loadBuiltInProject==='function');
  await page.evaluate(()=>window.loadBuiltInProject());
  await page.waitForFunction(()=>document.querySelector('[data-brf=app-status]')?.textContent==='Project open.',null,{timeout:90000});
- await page.locator('[data-brf=target-value]').fill('0.25');await page.locator('[data-brf=target-set]').click();
+ await page.locator('[data-brf=target-row]').first().locator('[data-brf=target-value]').fill('0.25');await page.locator('[data-brf=target-row]').first().locator('[data-brf=target-set]').click();
  await page.waitForFunction(()=>/Target request accepted/.test(document.querySelector('[data-brf=target-feedback]')?.textContent??''));
  const snapshot=await page.evaluate(()=>window.captureBuiltInProject());
  if(!snapshot.current||snapshot.format!=='brf-project-experiment/1'||!snapshot.records.some(x=>x.startsWith('session-targets-')))throw Error('Invalid saved project: '+JSON.stringify(snapshot));

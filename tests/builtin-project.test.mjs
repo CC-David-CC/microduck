@@ -24,7 +24,7 @@ test('truth grant matches the actual compiled project revision',async()=>{
  const profile=JSON.parse(await readFile(new URL('../microduck-profile.json',import.meta.url)));
  const result=await promisify(execFile)(process.execPath,[new URL('../tools/inspect-builtin-channel.mjs',import.meta.url).pathname],{env:{...process.env,MICRODUCK_BUILTIN_PROJECT:path}});
  const report=JSON.parse(result.stdout);
- assert.equal(report.revision,'5ead0e42f7e44efb865941852fc8ecf93f8348ae4f1f48d2b27808713ff989d6');
+ assert.equal(report.revision,'0183b6ea156fbb779121ecdb9b4c0ee205cdfec652eb427c4326b1064868ac2a');
  assert.equal(report.channel.definition_sha256,profile.controllers[0].grants[0].definition_sha256);
  assert.equal(report.channel.definition_sha256,profile.policy.approvedGrants[0].definition_sha256);
  const recording=profile.policy.approvedRecordingGrants[0];assert.equal(recording.project_revision,report.revision);assert.equal(recording.group_id,'all');assert.equal(recording.max_entries,64);

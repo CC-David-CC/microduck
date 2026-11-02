@@ -1,17 +1,17 @@
 {
-  "revision": "5ead0e42f7e44efb865941852fc8ecf93f8348ae4f1f48d2b27808713ff989d6",
+  "revision": "0183b6ea156fbb779121ecdb9b4c0ee205cdfec652eb427c4326b1064868ac2a",
   "channel": {
     "id": "microduck.truth",
     "kind": "truth",
     "size": 35,
     "unit": "mixed",
     "frame": null,
-    "definition_sha256": "9037a0e53707dd3e3b957d45c57553f2c4f9f82950b6182a596341b808313e3a",
+    "definition_sha256": "938615f91829799a3e16155da4c276b74a9701ea76f67c67f80ab298bfa86202",
     "source_ids": []
   },
   "definition": {
     "version": "brf.microduck-plant-truth.v1",
-    "project_revision": "5ead0e42f7e44efb865941852fc8ecf93f8348ae4f1f48d2b27808713ff989d6",
+    "project_revision": "0183b6ea156fbb779121ecdb9b4c0ee205cdfec652eb427c4326b1064868ac2a",
     "id": "microduck.truth",
     "layout": [
       {

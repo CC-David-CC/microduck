@@ -14,6 +14,19 @@ export function createGrantedMeasurementRecorder(requested:unknown,input:unknown
 }
 
 
+/** Validate the complete descriptor supplied by a trusted host or compiler. */
+export function validRecordingChannel(channel:any):boolean {
+ const channelKeys=['id','kind','size','unit','frame','definition_sha256','source_ids'];
+ return exact(channel,channelKeys)&&typeof channel.id==='string'&&channel.id.length>0&&channel.id.length<=256&&
+    typeof channel.definition_sha256==='string'&&/^[0-9a-f]{64}$/.test(channel.definition_sha256)&&
+    ['truth','measurement','estimate'].includes(channel.kind)&&Number.isSafeInteger(channel.size)&&channel.size>=1&&channel.size<=64&&
+    typeof channel.unit==='string'&&channel.unit.length>0&&channel.unit.length<=128&&
+    (channel.frame===null||(typeof channel.frame==='string'&&channel.frame.length>0&&channel.frame.length<=256))&&
+    Array.isArray(channel.source_ids)&&channel.source_ids.length<=64&&
+    channel.source_ids.every((id:unknown)=>typeof id==='string'&&id.length>0&&id.length<=256)&&
+    new Set(channel.source_ids).size===channel.source_ids.length;
+}
+
 /**
  * Both the host grant and the independently compiled channel descriptor are
  * trusted inputs. This binds their complete descriptors; it does not derive
@@ -21,17 +34,10 @@ export function createGrantedMeasurementRecorder(requested:unknown,input:unknown
  */
 export function createGrantedChannelRecorder(requested:unknown,input:unknown,compiledChannel:unknown){
  const authority=copyBounded(requested,4096),grant=copyBounded(input,8192),channel=copyBounded(compiledChannel,8192);
- const channelKeys=['id','kind','size','unit','frame','definition_sha256','source_ids'];
  if(!exact(authority,keys)||!exact(grant,['purpose','authority','channel','max_entries'])||grant.purpose!=='channel-recording'||
     !exact(grant.authority,keys)||keys.some(k=>grant.authority[k]!==authority[k])||
-    !exact(channel,channelKeys)||!exact(grant.channel,channelKeys)||!sameBoundedData(grant.channel,channel)||
+    !validRecordingChannel(channel)||!validRecordingChannel(grant.channel)||!sameBoundedData(grant.channel,channel)||
     channel.id!==authority.channel_id||channel.definition_sha256!==authority.definition_sha256||
-    !['truth','measurement','estimate'].includes(channel.kind)||!Number.isSafeInteger(channel.size)||channel.size<1||channel.size>64||
-    typeof channel.unit!=='string'||!channel.unit||channel.unit.length>128||
-    (channel.frame!==null&&(typeof channel.frame!=='string'||!channel.frame||channel.frame.length>256))||
-    !Array.isArray(channel.source_ids)||channel.source_ids.length>64||
-    !channel.source_ids.every((id:unknown)=>typeof id==='string'&&id.length>0&&id.length<=256)||
-    new Set(channel.source_ids).size!==channel.source_ids.length||
     !Number.isSafeInteger(grant.max_entries)||grant.max_entries<1||grant.max_entries>256)throw Error('Invalid channel recording grant');
  const log=createSampleLog(authority,grant.max_entries,channel.size);
  const description=Object.freeze({...channel,source_ids:Object.freeze(channel.source_ids.slice())});

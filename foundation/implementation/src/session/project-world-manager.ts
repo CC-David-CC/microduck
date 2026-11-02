@@ -6,7 +6,9 @@ import {collectMjcfClosure} from '../projects/mjcf-closure.ts';
 import {validateModelAssets} from '../projects/model-assets-profile.ts';
 import {prepareProjectControllers} from '../projects/project-controller-admission.ts';
 import {openRunnerFrame} from '../isolation/runner-host.ts';
-import {validateMeasuredStepResponse} from '../experiments/measured-step-response.ts';
+import {validateMeasuredStepResponse, validateChannelStepResponse} from '../experiments/measured-step-response.ts';
+import {validRecordingChannel} from '../experiments/measurement-recording-grant.ts';
+import {channelStepBudget} from '../experiments/channel-step-budget.ts';
 import {createVisualMeshTransfer} from './visual-mesh-transfer.ts';
 import {createVisualMeshAttributeTransfer} from './visual-mesh-attribute-transfer.ts';
 
@@ -268,12 +270,14 @@ export function createControlledProjectWorldManager(input: any) {
   if (!Array.isArray(approvedRecordingGrants) || approvedRecordingGrants.length > 256) throw new Error('Invalid recording policy');
   const recordingKeys = new Set<string>();
   for (const row of approvedRecordingGrants) {
-    if (!fields(row,['project_revision','group_id','channel_id','definition_sha256','max_entries']) ||
+    if (!fields(row,['project_revision','group_id','channel_id','definition_sha256','max_entries'],['channel']) ||
         typeof row.project_revision !== 'string' || !/^[0-9a-f]{64}$/.test(row.project_revision) ||
         typeof row.group_id !== 'string' || !row.group_id || row.group_id.length > 256 ||
         typeof row.channel_id !== 'string' || !row.channel_id || row.channel_id.length > 256 ||
         typeof row.definition_sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(row.definition_sha256) ||
-        !Number.isSafeInteger(row.max_entries) || row.max_entries < 1 || row.max_entries > 256) throw new Error('Invalid recording policy');
+        !Number.isSafeInteger(row.max_entries) || row.max_entries < 1 || row.max_entries > 256 ||
+        (Object.hasOwn(row,'channel') && (!validRecordingChannel(row.channel) || row.channel.id !== row.channel_id ||
+          row.channel.definition_sha256 !== row.definition_sha256 || row.max_entries * row.channel.size > 4096))) throw new Error('Invalid recording policy');
     const key=JSON.stringify([row.project_revision,row.group_id,row.channel_id]);
     if (recordingKeys.has(key)) throw new Error('Invalid recording policy');
     recordingKeys.add(key);
@@ -690,16 +694,22 @@ function createManager(input: Policy, controlled?: ControlledPolicy) {
         let measurement: unknown;
         if (pending.recording) {
           try {
-            measurement=validateMeasuredStepResponse({request_id:pending.id,generation:attempt.generation,command_sequence:pending.sequence,
+            const expected={request_id:pending.id,generation:attempt.generation,command_sequence:pending.sequence,
               identity:attempt.identity,start_tick:pending.startTick,steps:pending.steps,attempt_token:pending.recording.attempt_token,
-              authority:pending.recording.authority},pending.recording.grant,msg.measurement_batch);
+              authority:pending.recording.authority};
+            measurement=pending.recording.grant.purpose==='channel-recording'
+              ? validateChannelStepResponse(expected,pending.recording.grant,msg.measurement_batch)
+              : validateMeasuredStepResponse(expected,pending.recording.grant,msg.measurement_batch);
           } catch { faultActive(attempt,'Invalid measurement batch'); return; }
         }
         clearTimeout(pending.timer); attempt.stepPending = undefined;
         attempt.baseline = copyBounded(msg.inspection, policy.maxReplyBytes);
         const result:any = {identity:copyBounded(attempt.identity, policy.maxReplyBytes),steps_completed:pending.steps,
           inspection:copyBounded(msg.inspection, policy.maxReplyBytes)};
-        if (pending.recording) result.measurement = measurement;
+        if (pending.recording) {
+          if (pending.recording.grant.purpose==='channel-recording') { result.measurement = (measurement as any).log; result.measurement_channel = (measurement as any).channel; }
+          else result.measurement = measurement;
+        }
         if (pending.poseCount !== null) {
           let pose: unknown;
           if (poseDescriptor && Object.hasOwn(poseDescriptor,'value') && poseDescriptor.enumerable) {
@@ -970,11 +980,18 @@ function createManager(input: Policy, controlled?: ControlledPolicy) {
           !recordingChoice.attempt_token || recordingChoice.attempt_token.length > 256) return Promise.reject(new Error('Recording not authorized'));
       const authority = {...current.identity,group_id:group.lease.group_id,lease_generation:group.lease.generation,
         channel_id:grant.channel_id,definition_sha256:grant.definition_sha256};
-      recording={authority,grant:{purpose:'measurement-recording',authority,max_entries:grant.max_entries},attempt_token:recordingChoice.attempt_token};
+      recording={authority,grant:Object.hasOwn(grant,'channel')
+        ? {purpose:'channel-recording',authority,channel:grant.channel,max_entries:grant.max_entries}
+        : {purpose:'measurement-recording',authority,max_entries:grant.max_entries},attempt_token:recordingChoice.attempt_token};
     }
     if (wantsPose && (!current.visualBinding || !sameIdentity(current.visualBinding.identity,current.identity))) return Promise.reject(new Error('Visual pose is not bound to this epoch'));
     const id = crypto.randomUUID(), sequence = (current.commandSequence ?? 0) + 1;
     const startTick = current.baseline.plant.tick, deadline = performance.now() + policy.timeoutMs;
+    if (recording?.grant.purpose === 'channel-recording') {
+      try { channelStepBudget({request_id:id,generation:current.generation,command_sequence:sequence,identity:current.identity,
+        start_tick:startTick,steps:value.steps,attempt_token:recording.attempt_token,authority:recording.authority},recording.grant.channel); }
+      catch (error) { return Promise.reject(error); }
+    }
     current.commandSequence = sequence;
     let resolve!: (value:unknown)=>void, reject!: (reason:Error)=>void;
     const completion = new Promise<unknown>((yes, no) => { resolve = yes; reject = no; });

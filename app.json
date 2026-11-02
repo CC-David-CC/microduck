@@ -1,6 +1,8 @@
 {
   "assets": [
-    "node_modules/@mujoco/mujoco/mujoco.wasm"
+    "node_modules/@mujoco/mujoco/mujoco.wasm",
+    "assets/microduck-project.json",
+    "assets/MICRODUCK-LICENSE.txt"
   ],
   "workers": {
     "world": "foundation/implementation/src/session/project-world-worker.ts"

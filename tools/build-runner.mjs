@@ -8,8 +8,10 @@ const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const appOrigin=process.env.MICRODUCK_APP_ORIGIN;
 const model=process.env.MICRODUCK_POLICY;
 const output=process.env.MICRODUCK_RUNNER_OUT;
-const origin=new URL(appOrigin);
-if(!appOrigin || origin.origin!==appOrigin || !['http:','https:'].includes(origin.protocol) || !model || !output) throw Error('Explicit app origin, model, and output are required');
+let origin;
+try { origin=new URL(appOrigin); } catch { throw Error('Invalid app origin'); }
+if(typeof appOrigin!=='string'||appOrigin.length>256||origin.origin!==appOrigin||(origin.port && Number(origin.port)===0)||!/^[a-z0-9]+(?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9]+(?:[a-z0-9-]*[a-z0-9])?)*$/.test(origin.hostname)||!(origin.protocol==='https:'||(origin.protocol==='http:'&&['127.0.0.1','localhost'].includes(origin.hostname)&&origin.port)))throw Error('Invalid app origin');
+if(!model || !output) throw Error('Explicit model and output are required');
 const out=resolve(output);
 await mkdir(out,{recursive:true});
 if((await readdir(out)).length) throw Error('Runner output must be empty');
@@ -38,4 +40,7 @@ for(const [entry,name] of [['runner-frame.ts','frame.js'],['runner-worker.ts','r
 await writeFile(resolve(out,'frame'),'<!doctype html>\n<meta charset="utf-8">\n<script type="module" src="/frame.js"></script>\n');
 await writeFile(resolve(out,'microduck-policy.onnx'),modelBytes);
 await copyFile(wasmFile,resolve(out,'microduck-runtime.wasm'));
+const names=['frame','frame.js','runner.js','microduck-policy.onnx','microduck-runtime.wasm','runner.js.LEGAL.txt'];
+const files=Object.fromEntries(await Promise.all(names.map(async name=>[name,hash(await readFile(resolve(out,name)))])));
+await writeFile(resolve(out,'runner-manifest.json'),JSON.stringify({version:'microduck-runner/1',appOrigin,files},null,2)+'\n');
 console.log(JSON.stringify({appOrigin,policy:hash(modelBytes),wasm:'4b884c203b0fa48d057be3332c65513ff85aa3c5bddd6946acc0fab7ecda001d',output:out}));

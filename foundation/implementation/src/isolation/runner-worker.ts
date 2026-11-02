@@ -1,4 +1,4 @@
-import {createOneShotNativeJsLoader} from './native-js-loader.ts';
+import {createOneShotNativeJsLoader} from '../../../../runner-native-loader.mjs';
 
 // The controller shares this worker realm. Capture every mutable built-in used
 // after evaluation before admitting its source.
@@ -275,7 +275,7 @@ function initializeRequest(request: Request): void {
   identity = {session_id:ids.session_id as string,project_revision:ids.project_revision as string,run_epoch:ids.run_epoch as number,
     group_id:ids.group_id as string,owner_id:ids.owner_id as string,lease_generation:ids.lease_generation as number};
   controlWidth = field(safeDescriptor.value as object,'control_size') as number;
-  const loading = loader(source, sourceId);
+  const loading = loader(source, sourceId, safeDescriptor.value);
   apply(promiseThen, loading, [(loaded: Awaited<ReturnType<typeof loader>>) => {
     if (terminal) return;
     if (!loaded.ok) { fail(request, 'CONTROLLER_FAULT', true); return; }

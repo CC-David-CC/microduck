@@ -149,7 +149,7 @@ export async function connectRunner(args: {
   const identity={session_id:data(args.identity,'session_id') as string,project_revision:data(args.identity,'project_revision') as string,run_epoch:data(args.identity,'run_epoch') as number};
   let closed=false,closing=false,initialized=false,stageInFlight=false,sequence=0,controlWidth=0;
   let pendingStage: {stageId:string;authority:Authority}|undefined;
-  let sentCount=0,windowStart=0,termination: Promise<void>|undefined,closePromise: Promise<void>|undefined;
+  let sentCount=0,windowStart=0,nextSendAt=0,termination: Promise<void>|undefined,closePromise: Promise<void>|undefined;
   const outstanding=new Map<string,{resolve:(reply:Reply)=>void;reject:(error:Error)=>void;timer:ReturnType<typeof setTimeout>} >();
   const terminations=new Map<string,()=>void>();
 
@@ -198,9 +198,17 @@ export async function connectRunner(args: {
     if(current-windowStart>=rateWindowMs){windowStart=current;sentCount=0;}
     sentCount++;return sentCount<=maxMessagesPerWindow;
   }
-  function call(message: Record<string,unknown>): Promise<Reply> {
-    if(closed)return Promise.reject(fault('CLOSED'));
-    if(!rate())return Promise.reject(fault('PROTOCOL_FAULT'));
+  async function call(message: Record<string,unknown>): Promise<Reply> {
+    if(closed || (closing && message.kind!=='dispose'))throw fault('CLOSED');
+    // Both ends retain their 128-message/sec limit. Pace this trusted caller
+    // below it so rapid stage/commit pairs do not fault healthy simulations.
+    // This delays wall-clock dispatch only; it never changes simulation ticks.
+    const current=performance.now();
+    const sendAt=Math.max(current,nextSendAt);
+    nextSendAt=sendAt+12;
+    if(sendAt>current)await new Promise<void>(resolve=>setTimeout(resolve,sendAt-current));
+    if(closed || (closing && message.kind!=='dispose'))throw fault('CLOSED');
+    if(!rate())throw fault('PROTOCOL_FAULT');
     const request_id=crypto.randomUUID();
     return new Promise((resolve,reject)=>{
       const timer=setTimeout(()=>{

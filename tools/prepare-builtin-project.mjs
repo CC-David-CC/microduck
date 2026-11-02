@@ -1,47 +1,29 @@
-// Convert the retained, pinned Microduck source project into this app's
-// explicit built-in adapter declaration. Never execute project code.
+// Assemble the pinned derivative project from ordinary source and upstream
+// assets. No imported source is executed; output is a generated build asset.
 import {readFile,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
+import {resolve,dirname} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {MICRODUCK_SOURCE,MICRODUCK_SOURCE_PATH} from '../runner-loader.mjs';
-const input=process.env.MICRODUCK_SOURCE_PROJECT, output=process.env.MICRODUCK_BUILTIN_PROJECT;
-if(!input||!output)throw Error('MICRODUCK_SOURCE_PROJECT and MICRODUCK_BUILTIN_PROJECT required');
+const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
+const space=process.env.MICRODUCK_SPACE_DIR, policy=process.env.MICRODUCK_POLICY, output=process.env.MICRODUCK_BUILTIN_PROJECT;
+if(!space||!policy||!output)throw Error('MICRODUCK_SPACE_DIR, MICRODUCK_POLICY and MICRODUCK_BUILTIN_PROJECT required');
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
-const bytes=await readFile(input);
-if(bytes.length>67108864)throw Error('Source project too large');
-const source=JSON.parse(bytes);
-if(source.format!=='brf-project-experiment/1'||!Array.isArray(source.files)||!Array.isArray(source.records)||source.records.length)throw Error('Unexpected source project');
-if(hash(JSON.stringify({format:source.format,files:source.files,records:source.records}))!==source.checksum)throw Error('Source checksum mismatch');
-const files=new Map();
-for(const row of source.files){
- if(typeof row.path!=='string'||typeof row.data_base64!=='string'||files.has(row.path))throw Error('Invalid source file');
- const b=Buffer.from(row.data_base64,'base64');
- if(b.toString('base64')!==row.data_base64)throw Error('Invalid source encoding');
- files.set(row.path,b);
-}
-const manifestBytes=files.get('manifest.json');
-if(!manifestBytes||hash(manifestBytes)!=='29e6a4c5811980f7e5487e7e28395c94333d1ff8bcce3755c3eabf9972adb2c2')throw Error('Wrong source revision');
-const manifest=JSON.parse(manifestBytes);
+const manifestBytes=await readFile(resolve(root,'project-source/manifest.json'));
+if(hash(manifestBytes)!=='5ead0e42f7e44efb865941852fc8ecf93f8348ae4f1f48d2b27808713ff989d6')throw Error('Project source manifest mismatch');
+const manifest=JSON.parse(manifestBytes),files=new Map([['manifest.json',manifestBytes]]);
 for(const [name,meta] of Object.entries(manifest.files)){
- const b=files.get(name);
- if(!b||b.length!==meta.bytes||hash(b)!==meta.sha256)throw Error('Source asset mismatch: '+name);
+ let bytes;
+ if(name===MICRODUCK_SOURCE_PATH)bytes=Buffer.from(MICRODUCK_SOURCE);
+ else if(name==='policies/alpha_walking.onnx')bytes=await readFile(policy);
+ else if(/^assets\/[a-z0-9_]+\.stl$/.test(name))bytes=await readFile(resolve(space,'app/public/robot/mjlab/meshes',name.slice(7)));
+ else if(['model.xml','experience.json','targets.json'].includes(name))bytes=await readFile(resolve(root,'project-source',name));
+ else throw Error('Unexpected project source path');
+ if(bytes.length!==meta.bytes||hash(bytes)!==meta.sha256)throw Error('Project asset mismatch: '+name);
+ files.set(name,bytes);
 }
-if(files.size!==Object.keys(manifest.files).length+1)throw Error('Unexpected source files');
-if(hash(files.get('policies/alpha_walking.onnx'))!=='e36332d383997d51401897734cd3e79cf5038406feddb18b4d57ecfb141daa6c')throw Error('Wrong policy');
-const old='controllers/lease-holder.mjs';
-if(!files.delete(old)||!Object.hasOwn(manifest.files,old))throw Error('Missing source declaration');
-delete manifest.files[old];
-const controller=Buffer.from(MICRODUCK_SOURCE);
-files.set(MICRODUCK_SOURCE_PATH,controller);
-manifest.files[MICRODUCK_SOURCE_PATH]={bytes:controller.length,sha256:hash(controller)};
-const experience=JSON.parse(files.get('experience.json'));
-experience.welcome='Meet Microduck! Set a walk speed, then run or step the simulation.';
-const exp=Buffer.from(JSON.stringify(experience));
-files.set('experience.json',exp);
-manifest.files['experience.json']={bytes:exp.length,sha256:hash(exp)};
-manifest.title='Microduck';
-const nextManifest=Buffer.from(JSON.stringify(manifest));
-files.set('manifest.json',nextManifest);
 const project={format:'brf-project-experiment/1',files:[...files].sort(([a],[b])=>a<b?-1:a>b?1:0).map(([path,data])=>({path,data_base64:data.toString('base64')})),records:[]};
 const result=Buffer.from(JSON.stringify({...project,checksum:hash(JSON.stringify(project))}));
+if(hash(result)!=='b32639fc7783f4d1f249f17ed458faf8b9e65ab3cbbdbfdcd844179265a18a82')throw Error('Generated project mismatch');
 await writeFile(output,result,{flag:'wx'});
-console.log(JSON.stringify({sourceRevision:hash(manifestBytes),projectRevision:hash(nextManifest),projectHash:hash(result),bytes:result.length}));
+console.log(JSON.stringify({projectRevision:hash(manifestBytes),projectHash:hash(result),bytes:result.length}));

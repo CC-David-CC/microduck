@@ -3,7 +3,8 @@ import {captureProjectTargets} from '../projects/project-target-admission.ts';
 import {encodeExactTargetHistory, inspectExactTargetHistory} from '../experiments/target-history-f64.ts';
 import {safeProjectPath} from '../projects/project-path.ts';
 import {createControlledProjectWorldManager, ResetFault, InspectionFault, OperationBusy, StepFault} from './project-world-manager.ts';
-import {copyBounded} from './project-world-wire.ts';
+import {copyBounded, sameBoundedData} from './project-world-wire.ts';
+import {channelStepBudget} from '../experiments/channel-step-budget.ts';
 import {validateTrustedRecordingPolicy} from './trusted-recording-policy.ts';
 import {createDisplayRenderer} from '../display/three-display.ts';
 import {createAttributedDisplayRenderer} from '../display/three-attributed-display.ts';
@@ -73,7 +74,7 @@ function validSessionVisualFacts(model:any,frame:any): boolean {
 type BrowserSession = {
   readonly identity: Readonly<{session_id: string; project_revision: string; run_epoch: number}>;
   readonly state: 'ready-paused' | 'running' | 'paused' | 'faulted' | 'disposed';
-  readonly recordingChannels: readonly {group_id:string;channel_id:string;definition_sha256:string;max_entries:number}[];
+  readonly recordingChannels: readonly {group_id:string;channel_id:string;definition_sha256:string;max_entries:number;channel?:Readonly<Record<string,unknown>>}[];
   readonly targets: readonly Readonly<{group_id:string;field:string;min:number;max:number}>[];
   setTarget(request:unknown):Promise<unknown>;
   targetHistory():Readonly<{entries:readonly Readonly<Record<string,unknown>>[];truncated:boolean}>;
@@ -348,10 +349,11 @@ function makeHost(manager: any, identity: any, budget: number, assetNotices: rea
         typeof choice.definition_sha256!=='string' || !/^[0-9a-f]{64}$/.test(choice.definition_sha256) ||
         !Number.isSafeInteger(value.requested_ticks) || value.requested_ticks<1 || value.requested_ticks>256) throw new Error('Invalid measured attempt');
     const recording={...choice,attempt_token:crypto.randomUUID()};
-    return startAttempt({requested_ticks:value.requested_ticks,batch_size:value.batch_size,max_wall_ms:value.max_wall_ms,configuration_evidence:value.configuration_evidence},recording);
+    const approved=recordingChannels.find(row=>row.group_id===choice.group_id && row.channel_id===choice.channel_id && row.definition_sha256===choice.definition_sha256);
+    return startAttempt({requested_ticks:value.requested_ticks,batch_size:value.batch_size,max_wall_ms:value.max_wall_ms,configuration_evidence:value.configuration_evidence},recording,approved?.channel ? approved : undefined);
   }
   function startBoundedAttempt(input: unknown) { return startAttempt(input); }
-  function startAttempt(input: unknown, recording?: any): {result: Promise<unknown>; cancel(): Promise<void>} {
+  function startAttempt(input: unknown, recording?: any, channelPolicy?: any): {result: Promise<unknown>; cancel(): Promise<void>} {
     function snapshotFields(value: unknown, keys: readonly string[]): Record<string, unknown> {
       if (!value || typeof value !== 'object' || Array.isArray(value) ||
           (Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null)) throw new Error('Invalid attempt options');
@@ -378,6 +380,21 @@ function makeHost(manager: any, identity: any, budget: number, assetNotices: rea
     const declaration = Object.freeze({project_revision:evidence.project_revision, configuration_sha256:evidence.configuration_sha256,
       runtime_lock_sha256:evidence.runtime_lock_sha256});
     const identity = freezeData(copyBounded(current, budget));
+    let effectiveBatchSize=batchSize;
+    if(channelPolicy) {
+      // Bound against worst-case numeric identifiers and the current authority;
+      // the manager and Worker independently recheck the actual message.
+      effectiveBatchSize=Math.min(batchSize,channelPolicy.max_entries);
+      const authority={...identity,group_id:recording.group_id,lease_generation:Number.MAX_SAFE_INTEGER,
+        channel_id:recording.channel_id,definition_sha256:recording.definition_sha256};
+      while(effectiveBatchSize>0) {
+        try {channelStepBudget({request_id:'00000000-0000-4000-8000-000000000000',generation:Number.MAX_SAFE_INTEGER,
+          command_sequence:Number.MAX_SAFE_INTEGER,identity,start_tick:requested-1,steps:effectiveBatchSize,
+          attempt_token:recording.attempt_token,authority},channelPolicy.channel);break;}
+        catch {effectiveBatchSize--;}
+      }
+      if(effectiveBatchSize===0)throw Error('Recording channel exceeds response budget');
+    }
     const started = performance.now();
     let cancelled = false;
     // Acquire synchronously before yielding to caller code or inspection.
@@ -390,7 +407,7 @@ function makeHost(manager: any, identity: any, budget: number, assetNotices: rea
       const entries:any[]=[]; let authority:any=null;
       try {
         try { lease = await acquisition; }
-        catch { return freezeData({status, identity, configuration_evidence:declaration, requested_ticks:requested, last_verified_tick:verified, reported_steps:reported,...(recording ? {measurement:{authority:null,entries:[],complete:false}} : {})}); }
+        catch { return freezeData({status, identity, configuration_evidence:declaration, requested_ticks:requested, last_verified_tick:verified, reported_steps:reported,...(recording ? {measurement:{authority:null,entries:[],complete:false,...(channelPolicy ? {channel:channelPolicy.channel} : {})}} : {})}); }
         try {
           let first: any;
           try { first = await inspect(); }
@@ -401,7 +418,7 @@ function makeHost(manager: any, identity: any, budget: number, assetNotices: rea
               if (isDisposed() || !sameIdentity(current, identity)) {status = 'unknown'; break;}
               if (cancelled) {status = 'cancelled'; break;}
               if (performance.now() - started >= wall) {status = 'deadline'; break;}
-              const steps = Math.min(batchSize, requested - verified);
+              const steps = Math.min(effectiveBatchSize, requested - verified);
               let response: any;
               try { response = await lease.step(steps); }
               catch (error) {
@@ -419,7 +436,8 @@ function makeHost(manager: any, identity: any, budget: number, assetNotices: rea
               }
               if (recording) {
                 const log=response.measurement, a=log?.authority;
-                if (!a || !sameIdentity(a,identity) || a.group_id!==recording.group_id || a.channel_id!==recording.channel_id ||
+                if ((channelPolicy && !sameBoundedData(response.measurement_channel,channelPolicy.channel)) ||
+                    !a || !sameIdentity(a,identity) || a.group_id!==recording.group_id || a.channel_id!==recording.channel_id ||
                     a.definition_sha256!==recording.definition_sha256 || !Number.isSafeInteger(a.lease_generation) || a.lease_generation<1 ||
                     (authority && a.lease_generation!==authority.lease_generation) || !Array.isArray(log.entries) || log.entries.length!==steps ||
                     log.sealed!==false || log.complete!==false || log.entries.some((entry:any,index:number)=>entry?.observed_tick!==verified!+index || entry?.outcome!=='completed')) {
@@ -445,7 +463,7 @@ function makeHost(manager: any, identity: any, budget: number, assetNotices: rea
       }
       if (hasPrimary) throw primary;
       return freezeData({status, identity, configuration_evidence:declaration, requested_ticks:requested, last_verified_tick:verified, reported_steps:reported,
-        ...(recording ? {measurement:{authority,entries,complete:status==='completed' && entries.length===requested}} : {})});
+        ...(recording ? {measurement:{authority,entries,complete:status==='completed' && entries.length===requested,...(channelPolicy ? {channel:channelPolicy.channel} : {})}} : {})});
     })();
     return Object.freeze({result, cancel() {cancelled = true; return result.then(() => undefined);}});
   }
@@ -942,7 +960,7 @@ export async function createBrowserSession(input: unknown): Promise<BrowserSessi
           !row.names.every((s:unknown) => typeof s === 'string' && s.length <= 128 && /^[A-Za-z0-9_][A-Za-z0-9_-]*$/.test(s))) throw new Error('Invalid asset notices');
       seen.add(row.path);
     }
-    return makeHost(manager, promoted.identity, budget, freezeData(rows), freezeData((policy.approvedRecordingGrants??[]).map((row:any)=>({group_id:row.group_id,channel_id:row.channel_id,definition_sha256:row.definition_sha256,max_entries:row.max_entries}))),targetCatalog.targets,inventory,controllers.map((c:any)=>({group_id:c.group_id,intent:c.intent})));
+    return makeHost(manager, promoted.identity, budget, freezeData(rows), freezeData((policy.approvedRecordingGrants??[]).map((row:any)=>({group_id:row.group_id,channel_id:row.channel_id,definition_sha256:row.definition_sha256,max_entries:row.max_entries,...(Object.hasOwn(row,'channel') ? {channel:row.channel} : {})}))),targetCatalog.targets,inventory,controllers.map((c:any)=>({group_id:c.group_id,intent:c.intent})));
   } catch (error) {
     if (manager) { try { await manager.dispose(); } catch { /* Preserve the construction failure. */ } }
     throw error;

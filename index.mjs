@@ -59,7 +59,8 @@ export function mount(host) {
     const wasInert=previousRoot.inert;previousRoot.inert=true;resetGrant();
     try {await stageReplacement({file,isCurrent:()=>!disposed&&application===previous&&isCurrent(),signal:abort.signal,createCandidate:input=>{
      const node=document.createElement('div');node.className='microduck-stage';root.append(node);let resolve,reject;const ready=new Promise((yes,no)=>{resolve=yes;reject=no});
-     let owned;try{owned=makeApplication(node,()=>resolve(),()=>reject(Error('Unable to open the selected project')));staged=owned;owned.openFile(input)}catch(error){node.remove();if(owned)void owned.dispose();throw error}
+     let owned;try{owned=makeApplication(node,()=>resolve(),()=>reject(Error('Unable to open the selected project')));staged=owned}catch(error){node.remove();throw error}
+     try{owned.openFile(input)}catch(error){reject(error)}
      return {node,owned,ready,async dispose(){if(staged===owned)staged=null;try{await owned.dispose()}finally{node.remove()}}};
     },commit:candidate=>{application=candidate.owned;applicationRoot=candidate.node;staged=null;candidate.node.classList.remove('microduck-stage');previousRoot?.remove();published();void previous.dispose().catch(error=>console.error('Microduck cleanup failed',error))}});
     } finally {if(application===previous&&previousRoot)previousRoot.inert=wasInert;}

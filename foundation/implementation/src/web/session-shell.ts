@@ -81,7 +81,7 @@ export function mountSessionShell({root, session, projectInspector, comparisonIn
   const researchStep=make('button','research-step','Step selected count') as HTMLButtonElement;
   researchStep.setAttribute('type','button');
   const attemptPanel=make('section','research-attempt');
-  const attemptNotice=make('p','research-attempt-notice','Configuration and runtime-lock hashes are declarations, not verified. Start from a paused session at step 0. The outcome is not saved.');
+  const attemptNotice=make('p','research-attempt-notice','Hashes are declarations and are not verified. Start a measured attempt at step 0; save its results with the project.');
   const attemptTicks=make('input','research-attempt-ticks') as HTMLInputElement;
   attemptTicks.setAttribute('type','text');attemptTicks.setAttribute('inputmode','numeric');attemptTicks.setAttribute('aria-label','Attempt steps (1 to 4096)');attemptTicks.value='1';
   const attemptConfig=make('input','research-attempt-config') as HTMLInputElement;
@@ -100,7 +100,12 @@ export function mountSessionShell({root, session, projectInspector, comparisonIn
   const attemptStatus=make('p','research-attempt-status','No attempt yet.');attemptStatus.setAttribute('role','status');
   const ledgerStatus=make('p','research-attempt-ledger-status','');ledgerStatus.setAttribute('role','status');
   const attemptHistory=make('p','research-attempt-history');
-  attemptPanel.append(attemptNotice,attemptTicks,attemptConfig,attemptRuntime,attemptPlan,attemptStart,measurementChoice,measuredStart,attemptCancel,attemptExport,attemptStatus,ledgerStatus,attemptHistory);
+  const researchLabel=(role:string,text:string,input:HTMLInputElement)=>{const label=make('label',role),caption=doc.createElement('span');caption.textContent=text;label.append(caption,input);return label;};
+  const stepLabel=researchLabel('research-step-label','Steps to advance',researchStepCount);
+  const attemptFields=make('div','research-attempt-fields'),attemptActions=make('div','research-attempt-actions');
+  attemptFields.append(researchLabel('research-attempt-ticks-label','Attempt steps',attemptTicks),researchLabel('research-attempt-config-label','Configuration SHA-256 declaration',attemptConfig),researchLabel('research-attempt-runtime-label','Runtime lock SHA-256 declaration',attemptRuntime));
+  attemptActions.append(attemptPlan,attemptStart,measurementChoice,measuredStart,attemptCancel,attemptExport);
+  attemptPanel.append(attemptNotice,attemptFields,attemptActions,attemptStatus,ledgerStatus,attemptHistory);
   const playFeedback=make('p','play-feedback','No paused snapshot yet.');
   const playGoal=make('p','play-goal','Project goal unavailable.');
   const goalProgress=make('p','game-goal-progress','');goalProgress.setAttribute('role','status');goalProgress.hidden=true;
@@ -119,7 +124,7 @@ export function mountSessionShell({root, session, projectInspector, comparisonIn
   const pinBaseline=make('button','research-pin-baseline','Pin reference snapshot') as HTMLButtonElement;
   pinBaseline.setAttribute('type','button');pinBaseline.disabled=true;
   const comparison=make('p','research-comparison','No reference snapshot.');
-  researchPane.append(researchStepCount,researchStep,attemptPanel,researchFeedback,vectorsPrevious,vectorsNext,vectorsPage,pinBaseline,comparison,authorityFeedback,researchAssetNotices);
+  researchPane.append(stepLabel,researchStep,attemptPanel,researchFeedback,vectorsPrevious,vectorsNext,vectorsPage,pinBaseline,comparison,authorityFeedback,researchAssetNotices);
   const savedComparison=comparisonInventoryLimits?mountSavedMeasurementComparison(researchPane,comparisonInventoryLimits):null;let comparisonDrain:Promise<void>|null=null;
   toolbar.append(run,pause,step,play,research,refresh);
   const targetPanel=make('section','target-panel');
@@ -143,15 +148,15 @@ export function mountSessionShell({root, session, projectInspector, comparisonIn
       const onSlide=()=>{input.value=slider.value;},onType=()=>{const raw=input.value.trim(),value=Number(raw);if(raw&&Number.isFinite(value)&&value>=target.min&&value<=target.max)slider.value=raw;};
       slider.addEventListener('input',onSlide);input.addEventListener('input',onType);targetCleanup.push(()=>{slider.removeEventListener('input',onSlide);input.removeEventListener('input',onType)});
       const button=make('button','target-set','Set target') as HTMLButtonElement;button.type='button';
-      const feedback=make('p','target-feedback','Move the slider or enter a number while paused, then select Set target.');feedback.setAttribute('role','status');row.append(sliderLabel,label,button,feedback);targetPanel.append(row);
+      const feedback=make('p','target-feedback','Move the slider or enter a number, then select Set target.');feedback.setAttribute('role','status');row.append(sliderLabel,label,button,feedback);targetPanel.append(row);
       const onTarget=()=>{
         if(disposed)return;
-        if(targetBusy || !paused()) {feedback.textContent='Pause before changing a target.';return;}
+        if(targetBusy || !['ready-paused','paused','running'].includes(session.state)) {feedback.textContent='Target controls are busy or unavailable.';return;}
         const raw=input.value.trim(),value=Number(raw);
         if(!raw || !Number.isFinite(value) || value<target.min || value>target.max){feedback.textContent=`Choose a number from ${target.min} to ${target.max}.`;return;}
         const identity=session.identity;targetBusy=true;button.disabled=true;feedback.textContent='Sending target request...';
         void Promise.resolve().then(()=>{if(disposed || !same(identity,session.identity))throw Error('Session unavailable');return session.setTarget!({group_id:target.group_id,field:target.field,value})}).then((reply:any)=>{
-          if(!disposed && same(identity,session.identity)){feedback.textContent=reply?.status==='accepted'?'Target request accepted.':reply?.status==='rejected'?'Target request rejected.':'Target outcome unknown.';if(reply?.status==='accepted')updateTutorial(null);}
+          if(!disposed && same(identity,session.identity)){feedback.textContent=reply?.status==='accepted'?`Target request accepted. Step ${reply.tick}; the controller may respond later.`:reply?.status==='rejected'?'Target request rejected.':'Target outcome unknown.';if(reply?.status==='accepted')updateTutorial(null);}
         },()=>{if(!disposed && same(identity,session.identity))feedback.textContent='Target outcome unknown.';}).finally(()=>{targetBusy=false;if(!disposed)button.disabled=false;});
       };
       button.addEventListener('click',onTarget);targetCleanup.push(()=>button.removeEventListener('click',onTarget));

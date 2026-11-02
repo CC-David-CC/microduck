@@ -180,7 +180,13 @@ function makeHost(manager: any, identity: any, budget: number, assetNotices: rea
     const kind = input.kind;
     commandIdentity(input);
     if (kind === 'dispose') { await dispose(); return undefined; }
-    if(targetPending)throw new OperationBusy('Target operation is busy');
+    if(targetPending && kind==='run' && owner===null && attemptOwner===null && (state==='ready-paused'||state==='paused')) {
+      const request=copyBounded(input,4096),pending=targetPending;
+      const reply:any=await pending;
+      if(reply?.status!=='accepted')throw new OperationBusy('Target was not accepted; run not started');
+      return execute(request,owner,recording);
+    }
+    if(targetPending && !(kind==='pause' && state==='running'))throw new OperationBusy('Target operation is busy');
     if (attemptOwner !== owner) throw new Error('Attempt control is busy or closed');
     activeCommands++;
     try {
@@ -259,7 +265,8 @@ function makeHost(manager: any, identity: any, budget: number, assetNotices: rea
   function setTargetCore(input: unknown, owner: object | null): Promise<unknown> {
     if (isDisposed()) return Promise.reject(new Error('Session disposed'));
     if (isFaulted()) return Promise.reject(new Error('Session faulted'));
-    if ((state !== 'ready-paused' && state !== 'paused') || attemptOwner !== owner || activeCommands || targetPending || meshJob || sceneJob || attributedJob || displayDrawing || displayTasks.size) return Promise.reject(new Error('Session operation is busy or not paused'));
+    const runningTarget=state==='running' && owner===null && attemptOwner===null && activeCommands===1;
+    if ((!runningTarget && ((state !== 'ready-paused' && state !== 'paused') || activeCommands)) || attemptOwner !== owner || targetPending || meshJob || sceneJob || attributedJob || displayDrawing || displayTasks.size) return Promise.reject(new Error('Session operation is busy or unavailable'));
     let request: any;
     try {
       request = copyBounded(input, 4096);

@@ -324,7 +324,8 @@ function createManager(input: Policy, controlled?: ControlledPolicy) {
     const sequence=Number(suffix);
     return Number.isSafeInteger(sequence) && sequence<=(attempt.rawVisualSequence ?? 0);
   }
-  type RunJob = {attempt:Attempt; identity:any; stopping:boolean; inFlight:boolean; timer:ReturnType<typeof setTimeout>|null; promise:Promise<unknown>; resolve:(value:unknown)=>void; reject:(reason:Error)=>void; settled:boolean};
+  type QueuedRunTarget = {input:any; resolve:(value:unknown)=>void; reject:(reason:Error)=>void};
+  type RunJob = {attempt:Attempt; identity:any; stopping:boolean; inFlight:boolean; timer:ReturnType<typeof setTimeout>|null; promise:Promise<unknown>; resolve:(value:unknown)=>void; reject:(reason:Error)=>void; settled:boolean; queuedTarget:QueuedRunTarget|null};
   let poseSink:{attempt:Attempt;identity:any;callback:(value:unknown)=>void;pending:any;raf:number|null}|null=null;
   function clearPoseSink(){const old=poseSink;poseSink=null;if(old?.raf!==null&&old?.raf!==undefined)cancelAnimationFrame(old.raf);}
   function discardPendingPose(){if(poseSink){if(poseSink.raf!==null)cancelAnimationFrame(poseSink.raf);poseSink.raf=null;poseSink.pending=null;}}
@@ -341,6 +342,7 @@ function createManager(input: Policy, controlled?: ControlledPolicy) {
     const job = runJob;
     if (!job || job.attempt !== attempt || job.settled) return;
     job.settled = true; if (job.timer !== null) clearTimeout(job.timer);
+    const queued=job.queuedTarget;job.queuedTarget=null;if(queued)queued.reject(new OperationBusy('Run ended before target dispatch'));
     runJob = null; job.reject(cause ?? Object.assign(new Error(reason), {outcome_unknown:true}));
   }
   function finishRun(job: RunJob) {
@@ -1022,10 +1024,10 @@ function createManager(input: Policy, controlled?: ControlledPolicy) {
     catch { faultActive(current, 'Step dispatch failed'); }
     return completion;
   }
-  function setTarget(input: unknown): Promise<unknown> {
+  function dispatchTarget(input: unknown, owner:RunJob|null=null): Promise<unknown> {
     if (!controlled || disposed || !active || active.status!=='active') return Promise.reject(new Error('Active world unavailable'));
     const current=active;
-    if (current.targetPending || current.resetPending || current.stepPending || current.inspect || current.groupPending || candidate?.promoting || runJob || pauseBarrier || meshJob) return Promise.reject(new OperationBusy('Active operation in progress'));
+    if (current.targetPending || current.resetPending || current.stepPending || current.inspect || current.groupPending || candidate?.promoting || (runJob && runJob!==owner) || pauseBarrier || meshJob) return Promise.reject(new OperationBusy('Active operation in progress'));
     let value:any;try { value=copyBounded(input,budget); } catch { return Promise.reject(new Error('Invalid target request')); }
     if (!fields(value,['identity','group_id','field','value']) || !fields(value.identity,['session_id','project_revision','run_epoch']) || !sameIdentity(value.identity,current.identity) ||
         typeof value.group_id!=='string' || !value.group_id || value.group_id.length>256 || typeof value.field!=='string' || !/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(value.field) ||
@@ -1038,6 +1040,18 @@ function createManager(input: Policy, controlled?: ControlledPolicy) {
     current.targetPending={id,sequence,group_id:value.group_id,field:value.field,value:value.value,deadline,timer,resolve,reject,completion};
     try {current.worker!.postMessage({kind:'set-target',request_id:id,generation:current.generation,identity:copyBounded(current.identity,budget),group_id:value.group_id,field:value.field,value:value.value,target_sequence:sequence})}
     catch {faultActive(current,'Target dispatch failed')}
+    return completion;
+  }
+  function setTarget(input:unknown):Promise<unknown> {
+    const job=runJob;
+    if(!job)return dispatchTarget(input);
+    if(disposed || active!==job.attempt || job.attempt.status!=='active' || job.stopping || job.settled || job.queuedTarget || job.attempt.targetPending || job.attempt.resetPending || job.attempt.inspect || job.attempt.groupPending || candidate?.promoting || pauseBarrier || meshJob) return Promise.reject(new OperationBusy('Running target operation is busy'));
+    let value:any;try{value=copyBounded(input,budget);}catch{return Promise.reject(new Error('Invalid target request'));}
+    if(!fields(value,['identity','group_id','field','value']) || !fields(value.identity,['session_id','project_revision','run_epoch']) || !sameIdentity(value.identity,job.identity) ||
+       typeof value.group_id!=='string' || !value.group_id || value.group_id.length>256 || typeof value.field!=='string' || !/^[A-Za-z][A-Za-z0-9_-]{0,63}$/.test(value.field) ||
+       typeof value.value!=='number' || !Number.isFinite(value.value))return Promise.reject(new Error('Invalid target request'));
+    const completion=new Promise<unknown>((resolve,reject)=>{job.queuedTarget={input:value,resolve,reject};});
+    if(!job.inFlight && job.timer===null)schedule(job);
     return completion;
   }
   function step(inputStep: unknown): Promise<unknown> { return stepCore(inputStep); }
@@ -1101,6 +1115,18 @@ function createManager(input: Policy, controlled?: ControlledPolicy) {
     job.timer = setTimeout(() => {
       job.timer = null;
       if (runJob !== job || job.settled) return;
+      const queued=job.queuedTarget;
+      if(queued) {
+        job.queuedTarget=null;job.inFlight=true;
+        void dispatchTarget(queued.input,job).then(value=>{
+          job.inFlight=false;queued.resolve(value);
+          if(runJob!==job || job.settled)return;
+          if(job.stopping)finishRun(job);else schedule(job);
+        },error=>{
+          job.inFlight=false;queued.reject(error instanceof Error?error:new Error('Target failed'));
+          if(runJob===job&&!job.settled)abortRun(job.attempt,'Running target failed',error instanceof Error?error:undefined);
+        });return;
+      }
       if (job.stopping) { finishRun(job); return; }
       job.inFlight = true;
       const wantsPose=!!poseSink && poseSink.attempt===job.attempt;
@@ -1108,10 +1134,10 @@ function createManager(input: Policy, controlled?: ControlledPolicy) {
         if(wantsPose && poseSink?.attempt===job.attempt)deliverPose(job.attempt,value.forward_pose);
         job.inFlight = false;
         if (runJob !== job || job.settled) return;
-        if (job.stopping) finishRun(job); else schedule(job);
+        if (job.stopping && !job.queuedTarget) finishRun(job); else schedule(job);
       }, error => {
         if (runJob === job && !job.settled) {
-          job.settled = true; runJob = null; job.reject(error instanceof Error ? error : new Error('Run failed'));
+          abortRun(job.attempt,'Run failed',error instanceof Error ? error : undefined);
         }
       });
     }, 0);
@@ -1123,7 +1149,7 @@ function createManager(input: Policy, controlled?: ControlledPolicy) {
     let resolve!: (value:unknown)=>void, reject!: (reason:Error)=>void;
     const promise = new Promise<unknown>((yes, no) => { resolve = yes; reject = no; });
     discardPendingPose();
-    const job: RunJob = {attempt:current,identity:copyBounded(current.identity,budget),stopping:false,inFlight:false,timer:null,promise,resolve,reject,settled:false};
+    const job: RunJob = {attempt:current,identity:copyBounded(current.identity,budget),stopping:false,inFlight:false,timer:null,promise,resolve,reject,settled:false,queuedTarget:null};
     runJob = job; void promise.catch(() => {}); schedule(job); return promise;
   }
   function pause(input: unknown): Promise<unknown> {
@@ -1131,7 +1157,8 @@ function createManager(input: Policy, controlled?: ControlledPolicy) {
     try { current = authority(input); } catch (error) { return Promise.reject(error); }
     if (runJob) {
       const job = runJob; job.stopping = true;
-      if (!job.inFlight) finishRun(job);
+      if (!job.inFlight && !job.queuedTarget) finishRun(job);
+      else if(!job.inFlight && job.timer===null)schedule(job);
       return job.promise;
     }
     if (pauseBarrier) return pauseBarrier.promise;

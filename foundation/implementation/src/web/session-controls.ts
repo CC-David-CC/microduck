@@ -11,6 +11,7 @@ export function createSessionControls({session, surfaceHost, controls, beforeRes
   const buttons=[run,pause,step,play,research,...(researchStep?[researchStep]:[])];
   if (!status || Boolean(researchStep)!==Boolean(researchStepCount) || (beforeResearchStep!==undefined && typeof beforeResearchStep!=='function') || (afterStep!==undefined && typeof afterStep!=='function') || (afterPause!==undefined && typeof afterPause!=='function') || (beforeAdvance!==undefined && typeof beforeAdvance!=='function') || buttons.some(button=>!button || typeof button.addEventListener!=='function' || typeof button.removeEventListener!=='function') || new Set(buttons).size!==buttons.length) throw new Error('Invalid session controls');
   let disposed=false, stepPending=false, runPending=false, pausePending=false, attemptBusy=false;
+  let runStartTimer:ReturnType<typeof setTimeout>|null=null;
   type Report={token:object;kind:'run'|'pause'|'step';message:string;count:number|null;unknown:boolean};
   let diagnostic:{identity:SessionIdentity;reports:Report[]}|null=null;
   const same=(a:SessionIdentity,b:SessionIdentity)=>!!a && !!b && a.session_id===b.session_id && a.project_revision===b.project_revision && a.run_epoch===b.run_epoch;
@@ -62,6 +63,11 @@ export function createSessionControls({session, surfaceHost, controls, beforeRes
       diagnostic.reports=kept;
     } else if(existing.length===0) existing.push(report);
   }
+  function watchRunStart() {
+    if(disposed || !runPending)return;
+    if(session.state==='running'){runStartTimer=null;update();return;}
+    runStartTimer=setTimeout(watchRunStart,25);
+  }
   async function command(kind:'run'|'pause'|'step', steps=1, isResearch=false) {
     if (disposed || attemptBusy) return;
     const state=session.state;
@@ -82,7 +88,7 @@ export function createSessionControls({session, surfaceHost, controls, beforeRes
       if(disposed || !same(identity,session.identity) || session.state==='disposed' || session.state==='faulted')return;
       const input={kind,...identity,...(kind==='step'?{steps}:{})};
       const operation=session.submit(input);
-      update();
+      if(kind==='run' && session.state!=='running'){update('Waiting for target...');watchRunStart();}else update();
       const result=await operation;
       if (!disposed && stillSame()) {update();if(kind==='step')try{afterStep?.(result)}catch{/* presentation cannot fail the step */}if(kind==='pause')try{afterPause?.(result)}catch{/* presentation cannot fail the pause */}}
     } catch (error) {
@@ -93,7 +99,7 @@ export function createSessionControls({session, surfaceHost, controls, beforeRes
       } else if (!disposed && !identity) update('Session identity unavailable');
     } finally {
       if (kind==='step') stepPending=false;
-      if (kind==='run') runPending=false;
+      if (kind==='run') {runPending=false;if(runStartTimer!==null){clearTimeout(runStartTimer);runStartTimer=null;}}
       if (kind==='pause') pausePending=false;
       if (!disposed) {
         const message=!identity || stillSame() ? status.textContent ?? '' : undefined;
@@ -114,5 +120,5 @@ export function createSessionControls({session, surfaceHost, controls, beforeRes
   const onPlay=()=>switchTo('play'), onResearch=()=>switchTo('research');
   run.addEventListener('click',onRun);pause.addEventListener('click',onPause);step.addEventListener('click',onStep);play.addEventListener('click',onPlay);research.addEventListener('click',onResearch);researchStep?.addEventListener('click',onResearchStep);
   update();
-  return Object.freeze({setAttemptBusy(value:boolean) {if (!disposed) {attemptBusy=value; update();}}, reconcileFault(identity:SessionIdentity) {if (!disposed && session.state==='faulted' && same(identity,session.identity) && !disposed) update();}, dispose() {if (disposed) return; disposed=true;diagnostic=null;run.removeEventListener('click',onRun);pause.removeEventListener('click',onPause);step.removeEventListener('click',onStep);play.removeEventListener('click',onPlay);research.removeEventListener('click',onResearch);researchStep?.removeEventListener('click',onResearchStep);}});
+  return Object.freeze({setAttemptBusy(value:boolean) {if (!disposed) {attemptBusy=value; update();}}, reconcileFault(identity:SessionIdentity) {if (!disposed && session.state==='faulted' && same(identity,session.identity) && !disposed) update();}, dispose() {if (disposed) return; disposed=true;diagnostic=null;if(runStartTimer!==null){clearTimeout(runStartTimer);runStartTimer=null;}run.removeEventListener('click',onRun);pause.removeEventListener('click',onPause);step.removeEventListener('click',onStep);play.removeEventListener('click',onPlay);research.removeEventListener('click',onResearch);researchStep?.removeEventListener('click',onResearchStep);}});
 }

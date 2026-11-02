@@ -26,7 +26,10 @@ export function createPublishedDuckView(canvas:HTMLCanvasElement,assetURL:string
   camera=new THREE.PerspectiveCamera(28,740/410,0.01,25);camera.up.set(0,0,1);
   scene.add(new THREE.HemisphereLight(0xffffff,0x76837c,2.2));const sun=new THREE.DirectionalLight(0xffffff,2.1);sun.position.set(1,-2,3);scene.add(sun);
   const groundGeometry=new THREE.PlaneGeometry(8,8),groundMaterial=new THREE.MeshStandardMaterial({color:0xb9d4c9,roughness:1});geometries.push(groundGeometry);materials.push(groundMaterial);
-  const ground=new THREE.Mesh(groundGeometry,groundMaterial);ground.position.z=-0.002;scene.add(ground);bodies=new Map();
+  const ground=new THREE.Mesh(groundGeometry,groundMaterial);ground.position.z=-0.002;scene.add(ground);
+  // Fixed world-space markings make translation visible from the follow camera.
+  const grid=new THREE.GridHelper(8,32,0x6b9185,0x91b3a7);grid.rotation.x=Math.PI/2;grid.position.z=0.0005;scene.add(grid);
+  geometries.push(grid.geometry);materials.push(...(Array.isArray(grid.material)?grid.material:[grid.material]));bodies=new Map();
   for(const body of rig){
    const group=new THREE.Group();bodies.set(body.name,group);scene.add(group);
    for(const geom of body.geoms){

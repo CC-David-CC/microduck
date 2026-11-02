@@ -12,6 +12,8 @@
 .microduck-app [data-brf=toolbar] {display:flex; flex-wrap:wrap; gap:6px; margin:6px 0;}
 .microduck-app [data-brf=target-panel] {margin:8px 0; display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr)); gap:4px 12px;}
 .microduck-app [data-brf=target-panel] h2 {font-size:16px; margin:4px 0; grid-column:1/-1;}
+.microduck-app [data-microduck=quick-drive] {margin:6px 0; display:flex; flex-wrap:wrap; align-items:center; gap:4px;}
+.microduck-app [data-microduck=quick-drive] p, .microduck-app [data-microduck=quick-drive] small {flex:1 1 100%; margin:0;}
 .microduck-app [data-brf=target-row] {display:flex; flex-wrap:wrap; align-items:center; gap:0 6px; min-width:0;}
 .microduck-app [data-brf=target-slider-label] {flex:1 1 100%; display:flex; align-items:center; gap:6px; min-width:0;}
 .microduck-app [data-brf=target-slider] {flex:1; min-width:0;}
@@ -22,3 +24,10 @@
 .microduck-app [data-brf=project-details] {margin-top:12px; border-top:1px solid #d4dde4; padding-top:8px; overflow-wrap:anywhere;}
 .microduck-app summary {cursor:pointer; font-weight:600;}
 .microduck-app [data-brf=research-pane] {overflow-wrap:anywhere;}
+
+.microduck-app [data-brf=research-attempt-fields] {display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr)); gap:6px;}
+.microduck-app [data-brf=research-attempt-fields] label {display:flex; flex-direction:column; min-width:0;}
+.microduck-app [data-brf=research-attempt-fields] input {box-sizing:border-box; min-width:0; width:100%;}
+.microduck-app [data-brf=research-attempt-actions] {display:flex; flex-wrap:wrap; gap:4px; margin-top:6px;}
+.microduck-app [data-brf=research-step-label] {display:inline-flex; align-items:center; gap:6px; margin-right:6px;}
+.microduck-app [data-brf=research-step-count] {width:4.5em;}

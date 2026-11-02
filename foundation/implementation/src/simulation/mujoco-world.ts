@@ -255,6 +255,7 @@ async function constructWorld(plant: Awaited<ReturnType<typeof createMujocoPlant
           blocks: binding.blocks});
       },
       describeMeasurementChannel() { live(); return measurement ? copy(measurement.describe().channel) : null; },
+      describeMeasurementDefinition() { live(); return measurement && 'describeDefinition' in measurement ? copy(measurement.describeDefinition()) : null; },
       lastBoundary() { live(); return structuredClone(last); },
       commitBoundary(actions: readonly ActionEnvelope[]) {
         assertWorldNotInitializing(operationFence);

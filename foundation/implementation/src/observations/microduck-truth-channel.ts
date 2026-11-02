@@ -13,13 +13,17 @@ function canonical(v:unknown,depth=0):unknown{
  if(![Object.prototype,null].includes(Object.getPrototypeOf(v)))throw Error('Invalid definition record');const names=Reflect.ownKeys(v);if(names.length>256||names.some(x=>typeof x!=='string'))throw Error('Invalid definition record');
  return ['object',(names as string[]).sort().map(k=>{const d=Object.getOwnPropertyDescriptor(v,k);if(!d||!Object.hasOwn(d,'value')||!d.enumerable)throw Error('Invalid definition field');return [k,canonical(d.value,depth+1)]})];
 }
+/** Hash the complete source and timing definition using the channel's canonical encoding. */
+export async function microduckTruthDefinitionHash(value:unknown):Promise<string>{
+ const bytes=new TextEncoder().encode(JSON.stringify(canonical(value)));if(bytes.length>65536)throw Error('Definition too large');
+ return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');
+}
 function identityCopy(v:Identity):Identity {if(!v||typeof v.session_id!=='string'||!v.session_id||v.session_id.length>256||typeof v.project_revision!=='string'||!/^[a-f0-9]{64}$/.test(v.project_revision)||!Number.isSafeInteger(v.run_epoch)||v.run_epoch<0)throw Error('Invalid identity');return {session_id:v.session_id,project_revision:v.project_revision,run_epoch:v.run_epoch};}
 /** A trusted truth channel; possession of it does not grant a controller access. */
 export async function createMicroduckTruthChannel(identity:Identity,source:Source,id:string){
  let bound=identityCopy(identity);if(typeof id!=='string'||!id||id.length>256||id.includes('\0'))throw Error('Invalid channel id');
  const facts=structuredClone(source.describe()),definition={version:'brf.microduck-plant-truth.v1',project_revision:bound.project_revision,id,layout,source:facts};
- const serialized=JSON.stringify(canonical(definition));const bytes=new TextEncoder().encode(serialized);if(bytes.length>65536)throw Error('Definition too large');
- const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),x=>x.toString(16).padStart(2,'0')).join('');
+ const digest=await microduckTruthDefinitionHash(definition);
  if(JSON.stringify(canonical(source.describe()))!==JSON.stringify(canonical(facts)))throw Error('Source changed during binding');
  let closed=false,lastTick=-1;const channel={id,kind:'truth',size:35,unit:'mixed',frame:null,definition_sha256:digest,source_ids:[]};
  return Object.freeze({describe(){if(closed)throw Error('Channel closed');return structuredClone(channel)},describeDefinition(){if(closed)throw Error('Channel closed');return structuredClone(definition)},

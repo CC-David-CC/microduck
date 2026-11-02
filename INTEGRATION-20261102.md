@@ -1,6 +1,6 @@
 # Desktop integration qualification — 2026-11-02
 
-The desktop integration branch combines Microduck source `4669474afe42a1b9f858835a9464ece6630f7bdf` with the staged-open safety fixes. It remains a local candidate; a DNS record alone does not configure the production runner or the live issuer/CSP.
+The desktop integration branch combines Microduck source `4669474afe42a1b9f858835a9464ece6630f7bdf` with the staged-open safety fixes. At the time of those checks it was a local candidate; later staging and activation are recorded below.
 
 The qualified no-eval MuJoCo files and pinned public policy/robot source were copied from R730 into disposable local staging. The app's own preparation scripts verified the engine hashes, generated built-in project hash `7bed18ccb5ee0da8d6939f8ce43fb4272fea35b82f357f0be4db92d28b4b63f2`, and visual asset hash `ee72047f7773cf2c9ae4f975db38921947bc11a4cb3ef242ed25227d6a452abd`. The actual public app builder produced a two-app Microduck/Files catalog; the separate local runner was built for the exact isolated desktop origin.
 
@@ -8,7 +8,7 @@ With the required fixture environment configured, 159 Node tests, 12 Python test
 
 A real-account staged-open regression passed at 1080p, 4K and an emulated phone viewport. It covered a malformed project, canceled confirmation and runner-start failure preserving the current session, followed by successful replacement and cleanup. A saved project does not preserve complete live plant state; the app keeps and explains the close warning. These checks do not establish physical-touch behavior or scientific/physical-robot validity.
 
-After the tests the isolated servers, temporary accounts, generated project/visual/runner/bundles and copied npm dependencies were removed. The original source, qualified engine and policy remain in their prior R730 backups; no generated runtime was committed. Production still needs an independently hosted distinct-origin runner, exact host-only CSP, current-issuer configuration and release-profile wiring, real account server-sync/isolation qualification, final testing, and a managed rollback. The user added `microduck-runner.ksu.codes`, which resolved to the existing webhost address; no additional router port is expected. The .brf opener remains capped at 64 MiB while the desired general storage limit is 128 MiB.
+After the tests the isolated servers, temporary accounts, generated project/visual/runner/bundles and copied npm dependencies were removed. The original source, qualified engine and policy remain in their prior R730 backups; no generated runtime was committed. At that point production still needed an independently hosted distinct-origin runner, exact host-only CSP, current-issuer configuration and release-profile wiring, real account server-sync/isolation qualification, final testing, and a managed rollback. The user added `microduck-runner.ksu.codes`, which resolved to the existing webhost address; no additional router port is expected. The .brf opener remains capped at 64 MiB while the desired general storage limit is 128 MiB.
 
 ## Protected server staging
 
@@ -19,3 +19,7 @@ The separate-origin runner (`1925e9462b81b93a61a1dad6f2e55011cc336c82d9ac54a3af6
 ## Runner route activation
 
 The runner-only hosting step was applied through the managed controller. The browser desktop and issuer still use their previous releases. `microduck-runner.ksu.codes` obtained a trusted Let's Encrypt certificate and serves a valid challenge frame with the expected restricted CSP. Requests for `/`, the manifest, malformed challenges and query-bearing asset URLs return 404; `/runner.js` returns 200. The root desktop response permits the runner frame and retains its existing COOP/COEP. All ten enabled websites returned the same HTTP statuses as before the reload (nine 200; hardware studio 401); the shared ingress and issuer remained active. The scoped restore script's read-only validation passed against its actual root-private backup receipt. The issuer upgrade, desktop switch, real-account live smoke and physical touch remain outstanding; the runner alone is not an integrated app release.
+
+## Desktop and issuer activation
+
+The native code-only issuer upgrade completed with operation ID `0eb7934e3df56d32fc6a28099d19ac91`, retaining the issuer and guest active roles and account state. The steward was already failed before this upgrade. The public configuration now advertises the runner origin. The desktop release `31e20e24c17d89fe36b3e21e170b114d4ec3df367fe31c1556661ae5fcb6439f` is active; its manifest includes Microduck. A read-only desktop restore check passed against the actual protected receipt. All ten hosted sites returned their previous HTTP statuses following the switch; issuer, guest, shared ingress and Caddy remain active. A real public two-account save/reopen test and physical-device testing are still outstanding.

@@ -2,7 +2,7 @@
 import {enterWorldOperation, reserveWorldOperation, finishWorldOperationReservation,
   releaseWorldOperationReservation} from './world-operation-fence.ts';
 import {copyBounded, sameBoundedData} from '../session/project-world-wire.ts';
-import {createGrantedMeasurementRecorder} from '../experiments/measurement-recording-grant.ts';
+import {createGrantedChannelRecorder, createGrantedMeasurementRecorder} from '../experiments/measurement-recording-grant.ts';
 
 type Assignment = {group_id: string; runner: {
   stage(value: {observation: unknown; intent: unknown; sequence: number; applyTick: number}): Promise<{stageId: string; control: unknown}>;
@@ -131,7 +131,7 @@ export async function createMeasuredControllerSupervisor(world: any, registratio
       parameters: structuredClone(item.parameters), intent: structuredClone(item.intent)};
   });
   const initial = copyBounded(world.inspect(), Number.MAX_SAFE_INTEGER);
-  const channel = world.describeMeasurementChannel();
+  const channel = copyBounded(world.describeMeasurementChannel(),8192);
   if (!channel || (channel.kind !== 'measurement' && channel.kind !== 'truth') || initial.phase !== 'paused' ||
       (!Number.isSafeInteger(initial.identity.run_epoch) || initial.identity.run_epoch < 0) || initial.plant.tick !== 0 ||
       initial.commands.groups.some((group: any) => group.accepted_sequence !== 0)) throw new Error('World is not a fresh measured world');
@@ -220,7 +220,9 @@ export async function createMeasuredControllerSupervisor(world: any, registratio
     if(!lease||authority.session_id!==identity.session_id||authority.project_revision!==identity.project_revision||authority.run_epoch!==identity.run_epoch||
        authority.lease_generation!==lease.generation||authority.channel_id!==channel.id||authority.definition_sha256!==channel.definition_sha256||
        !config.grant||config.grant.max_entries<count)throw Error('Invalid recording authority');
-    const recorder=createGrantedMeasurementRecorder(authority,config.grant);stepRecorders.add(recorder);return recorder;
+    const recorder=config.grant.purpose==='channel-recording' ?
+      createGrantedChannelRecorder(authority,config.grant,channel).log : createGrantedMeasurementRecorder(authority,config.grant);
+    stepRecorders.add(recorder);return recorder;
   }
   function setTarget(input: unknown) {
     if (closed || closing || active) throw new Error('Supervisor is unavailable');

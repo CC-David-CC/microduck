@@ -1,0 +1,39 @@
+<mujoco model="S02 trusted scalar-stage fixture">
+  <compiler angle="radian"/>
+  <option timestep="0.0625" gravity="0 0 0" integrator="RK4"/>
+  <worldbody>
+    <body name="free-body" pos="10 0 0">
+      <freejoint name="free"/>
+      <geom type="sphere" size="0.1" mass="1" contype="0" conaffinity="0"/>
+    </body>
+    <body name="rotor">
+      <joint name="angle" type="hinge" axis="0 0 1" ref="0.25" damping="0" armature="0" limited="false"/>
+      <inertial pos="0 0 0" mass="1" diaginertia="1 1 1"/>
+      <geom type="sphere" size="0.1" contype="0" conaffinity="0"/>
+      <site name="tip" pos="1 0 0" size="0.01"/>
+    </body>
+    <body name="slider" pos="3 0 0">
+      <joint name="translation" type="slide" axis="1 0 0" ref="-0.125" damping="0" armature="0" limited="false"/>
+      <inertial pos="0 0 0" mass="2" diaginertia="1 1 1"/>
+      <geom type="sphere" size="0.1" contype="0" conaffinity="0"/>
+    </body>
+    <body name="ball-body" pos="6 0 0">
+      <joint name="ball" type="ball" damping="0"/>
+      <geom type="sphere" size="0.1" mass="1" contype="0" conaffinity="0"/>
+    </body>
+  </worldbody>
+  <actuator>
+    <motor name="torque" joint="angle" gear="1" ctrllimited="false" forcelimited="false"/>
+    <motor name="force" joint="translation" gear="1" ctrllimited="false" forcelimited="false"/>
+  </actuator>
+  <sensor>
+    <jointpos name="angle_raw" joint="angle"/>
+    <jointpos name="angle_noise" joint="angle" noise="0.75"/>
+    <jointpos name="angle_delay" joint="angle" nsample="4" delay="0.125" interp="zoh"/>
+    <jointpos name="angle_periodic" joint="angle" nsample="4" interval="0.1875 0"/>
+    <jointpos name="angle_cutoff" joint="angle" cutoff="0.1"/>
+    <jointvel name="angular_velocity" joint="angle"/>
+    <jointpos name="slide_raw" joint="translation"/>
+    <framepos name="tip_position" objtype="site" objname="tip"/>
+  </sensor>
+</mujoco>

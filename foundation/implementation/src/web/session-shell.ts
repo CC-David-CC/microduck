@@ -579,7 +579,7 @@ export function mountSessionShell({root, session, projectInspector, comparisonIn
         }
         if(measured){
           if(!receipt.measurement || !Array.isArray(receipt.measurement.entries))throw Error('Missing measurement');
-          lastMeasured={id:'session-measured-'+crypto.randomUUID(),receipt:copyBounded(receipt,262144),identity:id};
+          lastMeasured={id:'session-measured-'+crypto.randomUUID(),receipt:copyBounded(receipt,524288),identity:id};
         }
         history.settle(rowId,receipt.status as Exclude<AttemptNoteStatus,'planned'|'running'>,verified,reported);renderHistory();
         attemptOutcomeIdentity=id;

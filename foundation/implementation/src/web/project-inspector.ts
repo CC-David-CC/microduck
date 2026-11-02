@@ -3,8 +3,7 @@ import {captureProjectInventory, type ProjectInventory, type ProjectInventoryLim
 import {readManifestJson} from '../projects/manifest-json.ts';
 import {safeProjectPath} from '../projects/project-path.ts';
 import {decodeExperimentFile,encodeExperimentFile} from '../projects/experiment-file.ts';
-import {encodeMeasuredAttemptRecord} from '../experiments/measured-attempt-record.ts';
-import {inspectMeasuredAttemptRecord} from '../experiments/measured-attempt-record.ts';
+import {encodePortableMeasuredAttempt,inspectPortableMeasuredAttempt} from '../experiments/portable-measured-attempt.ts';
 import {summarizeSavedTargets} from './saved-target-summary.ts';
 import {readSavedTarget} from './saved-target-reapply.ts';
 import {summarizeSavedNotes} from './saved-notes-summary.ts';
@@ -174,12 +173,10 @@ export function mountProjectInspector({root,chooseDirectory,folderLimits,invento
         } catch {detail='unverified; target details unavailable or incomplete';}
       } else if(row.kind==='research') {
         try {
-          const parsed=await readManifestJson(row.content,{max_bytes:131072,max_depth:20});
-          const authority=(parsed.data as any)?.measurement?.authority ?? null;
-          const checked=await inspectMeasuredAttemptRecord(row.content,authority,131072);
-          if(checked.receipt.identity.project_revision!==revision)throw Error('Record revision mismatch');
+          const checked=await inspectPortableMeasuredAttempt(row.content,revision);
           const count=checked.measurement?.entries.length??0;
-          detail=`unverified; ${checked.receipt.status}; ${count} samples; last verified tick ${checked.receipt.last_verified_tick??'unknown'}`;
+          const description=checked.measurement?.channel ? `${checked.measurement.channel.kind} channel; source definition included; ` : '';
+          detail=`unverified; ${checked.receipt.status}; ${description}${count} samples; last verified tick ${checked.receipt.last_verified_tick??'unknown'}`;
         } catch {detail='unverified; details unavailable';}
       }
       lines.push(`${row.id} (${row.kind}): ${detail}`);
@@ -227,7 +224,7 @@ export function mountProjectInspector({root,chooseDirectory,folderLimits,invento
       const game=captureSessionGame?.(inventory)??null,notes=captureSessionNotes?.(inventory)??null,measured=captureSessionMeasured?.(inventory)??null,targets=captureSessionTargets?.(inventory)??null;
       if(game){const index=records.findIndex(row=>row.id===game.id);if(index>=0)records.splice(index,1);records.push({id:game.id,kind:'game',content:game.content});}
       if(notes){const index=records.findIndex(row=>row.id==='session-attempt-notes');if(index>=0)records.splice(index,1);records.push({id:'session-attempt-notes',kind:'research',content:notes.content});}
-      if(measured){const content=await encodeMeasuredAttemptRecord(measured.receipt,131072);const index=records.findIndex(row=>row.id===measured.id);if(index>=0)records.splice(index,1);records.push({id:measured.id,kind:'research',content});}
+      if(measured){const content=await encodePortableMeasuredAttempt(measured.receipt);const index=records.findIndex(row=>row.id===measured.id);if(index>=0)records.splice(index,1);records.push({id:measured.id,kind:'research',content});}
       if(targets){const content=await targets.encode();const index=records.findIndex(row=>row.id===targets.id);if(index>=0)records.splice(index,1);records.push({id:targets.id,kind:'research',content});}
       const blob=await encodeExperimentFile(inventory,records,{max_bundle_bytes:67108864,max_records:8,max_record_bytes:1048576,max_total_record_bytes:2097152,inventory:inventoryCaps});
       const isCurrent=()=>!disposed&&token===generation&&selected===inventory&&

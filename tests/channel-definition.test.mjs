@@ -12,6 +12,7 @@ test('compiled world exposes an immutable copy of the exact truth definition and
   assert.deepEqual(definition.layout.map(x=>x.stage),['initial-forward-or-post-step-pre-forward','initial-forward-or-post-step-pre-forward','current-qpos','current-qvel']);
   assert.equal(definition.source.joint_names.length,14);assert.equal(await microduckTruthDefinitionHash(definition),channel.definition_sha256);
   assert.equal(createHash('sha256').update(JSON.stringify(canonical(definition))).digest('hex'),channel.definition_sha256);
+  const retained=JSON.parse(await readFile(new URL('./fixtures/microduck-truth-definition.json',import.meta.url)));assert.deepEqual(retained.definition,definition);assert.equal(await microduckTruthDefinitionHash(retained.definition),channel.definition_sha256);
   definition.source.joint_names[0]='changed';assert.notEqual(w.describeMeasurementDefinition().source.joint_names[0],'changed');assert.deepEqual(w.inspect(),before);
  }finally{await w.dispose()}
 });

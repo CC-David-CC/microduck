@@ -13,6 +13,29 @@ function canonical(v:unknown,depth=0):unknown{
  if(![Object.prototype,null].includes(Object.getPrototypeOf(v)))throw Error('Invalid definition record');const names=Reflect.ownKeys(v);if(names.length>256||names.some(x=>typeof x!=='string'))throw Error('Invalid definition record');
  return ['object',(names as string[]).sort().map(k=>{const d=Object.getOwnPropertyDescriptor(v,k);if(!d||!Object.hasOwn(d,'value')||!d.enumerable)throw Error('Invalid definition field');return [k,canonical(d.value,depth+1)]})];
 }
+/** Exact, deterministic inert representation; binary64 values include signed zero. */
+export function encodeMicroduckTruthDefinition(value:unknown):unknown{return canonical(value);}
+export function decodeMicroduckTruthDefinition(input:unknown):unknown {
+ function decode(node:any,depth:number):unknown {
+  if(depth>16||!Array.isArray(node)||node.length<1||node.length>2)throw Error('Invalid canonical definition');
+  const [kind,value]=node;
+  if(kind==='null'&&node.length===1)return null;
+  if(kind==='string'&&node.length===2&&typeof value==='string')return value;
+  if(kind==='boolean'&&node.length===2&&typeof value==='boolean')return value;
+  if(kind==='f64'&&node.length===2&&typeof value==='string'&&/^[0-9a-f]{16}$/.test(value)){
+   const d=new DataView(new ArrayBuffer(8));d.setBigUint64(0,BigInt('0x'+value),false);const n=d.getFloat64(0,false);if(!Number.isFinite(n))throw Error('Invalid canonical number');return n;
+  }
+  if(kind==='array'&&node.length===2&&Array.isArray(value)&&value.length<=256)return value.map((v:any)=>decode(v,depth+1));
+  if(kind==='object'&&node.length===2&&Array.isArray(value)&&value.length<=256){
+   const result:Record<string,unknown>={},seen=new Set<string>();let last:string|null=null;
+   for(const pair of value){if(!Array.isArray(pair)||pair.length!==2||typeof pair[0]!=='string'||seen.has(pair[0])||(last!==null&&last>=pair[0]))throw Error('Invalid canonical fields');
+    seen.add(pair[0]);last=pair[0];Object.defineProperty(result,pair[0],{value:decode(pair[1],depth+1),enumerable:true,writable:true,configurable:true});}
+   return result;
+  }
+  throw Error('Invalid canonical definition');
+ }
+ const result=decode(input,0);if(JSON.stringify(canonical(result))!==JSON.stringify(input))throw Error('Noncanonical definition');return result;
+}
 /** Hash the complete source and timing definition using the channel's canonical encoding. */
 export async function microduckTruthDefinitionHash(value:unknown):Promise<string>{
  const bytes=new TextEncoder().encode(JSON.stringify(canonical(value)));if(bytes.length>65536)throw Error('Definition too large');

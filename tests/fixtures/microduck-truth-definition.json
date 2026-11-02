@@ -1,0 +1,543 @@
+{
+  "revision": "5ead0e42f7e44efb865941852fc8ecf93f8348ae4f1f48d2b27808713ff989d6",
+  "channel": {
+    "id": "microduck.truth",
+    "kind": "truth",
+    "size": 35,
+    "unit": "mixed",
+    "frame": null,
+    "definition_sha256": "9037a0e53707dd3e3b957d45c57553f2c4f9f82950b6182a596341b808313e3a",
+    "source_ids": []
+  },
+  "definition": {
+    "version": "brf.microduck-plant-truth.v1",
+    "project_revision": "5ead0e42f7e44efb865941852fc8ecf93f8348ae4f1f48d2b27808713ff989d6",
+    "id": "microduck.truth",
+    "layout": [
+      {
+        "name": "gyro",
+        "size": 3,
+        "unit": "rad/s",
+        "stage": "initial-forward-or-post-step-pre-forward"
+      },
+      {
+        "name": "body_quaternion_wxyz",
+        "size": 4,
+        "unit": "1",
+        "stage": "initial-forward-or-post-step-pre-forward"
+      },
+      {
+        "name": "joint_position",
+        "size": 14,
+        "unit": "rad",
+        "stage": "current-qpos"
+      },
+      {
+        "name": "joint_velocity",
+        "size": 14,
+        "unit": "rad/s",
+        "stage": "current-qvel"
+      }
+    ],
+    "source": {
+      "sensor_name": "imu_ang_vel",
+      "body_name": "trunk_base",
+      "joint_names": [
+        "left_hip_yaw",
+        "left_hip_roll",
+        "left_hip_pitch",
+        "left_knee",
+        "left_ankle",
+        "neck_pitch",
+        "head_pitch",
+        "head_yaw",
+        "head_roll",
+        "right_hip_yaw",
+        "right_hip_roll",
+        "right_hip_pitch",
+        "right_knee",
+        "right_ankle"
+      ],
+      "position_facts": [
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qpos",
+          "capture_stage": "kinematics",
+          "joint_name": "left_hip_yaw",
+          "joint_id": 1,
+          "joint_type": "hinge",
+          "qpos_address": 7,
+          "dof_address": 6,
+          "body_id": 2,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "reference": 0,
+          "native_unit": "rad"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qpos",
+          "capture_stage": "kinematics",
+          "joint_name": "left_hip_roll",
+          "joint_id": 2,
+          "joint_type": "hinge",
+          "qpos_address": 8,
+          "dof_address": 7,
+          "body_id": 3,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "reference": 0,
+          "native_unit": "rad"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qpos",
+          "capture_stage": "kinematics",
+          "joint_name": "left_hip_pitch",
+          "joint_id": 3,
+          "joint_type": "hinge",
+          "qpos_address": 9,
+          "dof_address": 8,
+          "body_id": 4,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "reference": 0,
+          "native_unit": "rad"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qpos",
+          "capture_stage": "kinematics",
+          "joint_name": "left_knee",
+          "joint_id": 4,
+          "joint_type": "hinge",
+          "qpos_address": 10,
+          "dof_address": 9,
+          "body_id": 5,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "reference": 0,
+          "native_unit": "rad"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qpos",
+          "capture_stage": "kinematics",
+          "joint_name": "left_ankle",
+          "joint_id": 5,
+          "joint_type": "hinge",
+          "qpos_address": 11,
+          "dof_address": 10,
+          "body_id": 6,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "reference": 0,
+          "native_unit": "rad"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qpos",
+          "capture_stage": "kinematics",
+          "joint_name": "neck_pitch",
+          "joint_id": 6,
+          "joint_type": "hinge",
+          "qpos_address": 12,
+          "dof_address": 11,
+          "body_id": 7,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "reference": 0,
+          "native_unit": "rad"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qpos",
+          "capture_stage": "kinematics",
+          "joint_name": "head_pitch",
+          "joint_id": 7,
+          "joint_type": "hinge",
+          "qpos_address": 13,
+          "dof_address": 12,
+          "body_id": 8,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "reference": 0,
+          "native_unit": "rad"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qpos",
+          "capture_stage": "kinematics",
+          "joint_name": "head_yaw",
+          "joint_id": 8,
+          "joint_type": "hinge",
+          "qpos_address": 14,
+          "dof_address": 13,
+          "body_id": 9,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "reference": 0,
+          "native_unit": "rad"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qpos",
+          "capture_stage": "kinematics",
+          "joint_name": "head_roll",
+          "joint_id": 9,
+          "joint_type": "hinge",
+          "qpos_address": 15,
+          "dof_address": 14,
+          "body_id": 10,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "reference": 0,
+          "native_unit": "rad"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qpos",
+          "capture_stage": "kinematics",
+          "joint_name": "right_hip_yaw",
+          "joint_id": 10,
+          "joint_type": "hinge",
+          "qpos_address": 16,
+          "dof_address": 15,
+          "body_id": 11,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "reference": 0,
+          "native_unit": "rad"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qpos",
+          "capture_stage": "kinematics",
+          "joint_name": "right_hip_roll",
+          "joint_id": 11,
+          "joint_type": "hinge",
+          "qpos_address": 17,
+          "dof_address": 16,
+          "body_id": 12,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "reference": 0,
+          "native_unit": "rad"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qpos",
+          "capture_stage": "kinematics",
+          "joint_name": "right_hip_pitch",
+          "joint_id": 12,
+          "joint_type": "hinge",
+          "qpos_address": 18,
+          "dof_address": 17,
+          "body_id": 13,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "reference": 0,
+          "native_unit": "rad"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qpos",
+          "capture_stage": "kinematics",
+          "joint_name": "right_knee",
+          "joint_id": 13,
+          "joint_type": "hinge",
+          "qpos_address": 19,
+          "dof_address": 18,
+          "body_id": 14,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "reference": 0,
+          "native_unit": "rad"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qpos",
+          "capture_stage": "kinematics",
+          "joint_name": "right_ankle",
+          "joint_id": 14,
+          "joint_type": "hinge",
+          "qpos_address": 20,
+          "dof_address": 19,
+          "body_id": 15,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "reference": 0,
+          "native_unit": "rad"
+        }
+      ],
+      "velocity_facts": [
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qvel",
+          "capture_stage": "velocity",
+          "joint_name": "left_hip_yaw",
+          "joint_id": 1,
+          "joint_type": "hinge",
+          "qvel_address": 6,
+          "body_id": 2,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "native_unit": "rad/s"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qvel",
+          "capture_stage": "velocity",
+          "joint_name": "left_hip_roll",
+          "joint_id": 2,
+          "joint_type": "hinge",
+          "qvel_address": 7,
+          "body_id": 3,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "native_unit": "rad/s"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qvel",
+          "capture_stage": "velocity",
+          "joint_name": "left_hip_pitch",
+          "joint_id": 3,
+          "joint_type": "hinge",
+          "qvel_address": 8,
+          "body_id": 4,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "native_unit": "rad/s"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qvel",
+          "capture_stage": "velocity",
+          "joint_name": "left_knee",
+          "joint_id": 4,
+          "joint_type": "hinge",
+          "qvel_address": 9,
+          "body_id": 5,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "native_unit": "rad/s"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qvel",
+          "capture_stage": "velocity",
+          "joint_name": "left_ankle",
+          "joint_id": 5,
+          "joint_type": "hinge",
+          "qvel_address": 10,
+          "body_id": 6,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "native_unit": "rad/s"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qvel",
+          "capture_stage": "velocity",
+          "joint_name": "neck_pitch",
+          "joint_id": 6,
+          "joint_type": "hinge",
+          "qvel_address": 11,
+          "body_id": 7,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "native_unit": "rad/s"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qvel",
+          "capture_stage": "velocity",
+          "joint_name": "head_pitch",
+          "joint_id": 7,
+          "joint_type": "hinge",
+          "qvel_address": 12,
+          "body_id": 8,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "native_unit": "rad/s"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qvel",
+          "capture_stage": "velocity",
+          "joint_name": "head_yaw",
+          "joint_id": 8,
+          "joint_type": "hinge",
+          "qvel_address": 13,
+          "body_id": 9,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "native_unit": "rad/s"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qvel",
+          "capture_stage": "velocity",
+          "joint_name": "head_roll",
+          "joint_id": 9,
+          "joint_type": "hinge",
+          "qvel_address": 14,
+          "body_id": 10,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "native_unit": "rad/s"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qvel",
+          "capture_stage": "velocity",
+          "joint_name": "right_hip_yaw",
+          "joint_id": 10,
+          "joint_type": "hinge",
+          "qvel_address": 15,
+          "body_id": 11,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "native_unit": "rad/s"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qvel",
+          "capture_stage": "velocity",
+          "joint_name": "right_hip_roll",
+          "joint_id": 11,
+          "joint_type": "hinge",
+          "qvel_address": 16,
+          "body_id": 12,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "native_unit": "rad/s"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qvel",
+          "capture_stage": "velocity",
+          "joint_name": "right_hip_pitch",
+          "joint_id": 12,
+          "joint_type": "hinge",
+          "qvel_address": 17,
+          "body_id": 13,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "native_unit": "rad/s"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qvel",
+          "capture_stage": "velocity",
+          "joint_name": "right_knee",
+          "joint_id": 13,
+          "joint_type": "hinge",
+          "qvel_address": 18,
+          "body_id": 14,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "native_unit": "rad/s"
+        },
+        {
+          "engine_version": "3.17.0",
+          "quantity": "mujoco.qvel",
+          "capture_stage": "velocity",
+          "joint_name": "right_ankle",
+          "joint_id": 14,
+          "joint_type": "hinge",
+          "qvel_address": 19,
+          "body_id": 15,
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "native_unit": "rad/s"
+        }
+      ]
+    }
+  }
+}

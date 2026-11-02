@@ -8,7 +8,7 @@ const metaKeys=['status','identity','configuration_evidence','requested_ticks','
 const exact=(v:any,k:string[])=>!!v&&typeof v==='object'&&!Array.isArray(v)&&Object.keys(v).length===k.length&&k.every(x=>Object.hasOwn(v,x));
 const hash=(v:any)=>typeof v==='string'&&/^[0-9a-f]{64}$/.test(v);
 function cap(value:unknown):number {if(!Number.isSafeInteger(value)||(value as number)<1||(value as number)>262144)throw Error('Invalid record limit');return value as number;}
-function metadata(r:any) {
+export function validateMeasuredAttemptMetadata(r:any) {
  if(!exact(r,metaKeys)||!exact(r.identity,identityKeys)||typeof r.identity.session_id!=='string'||!r.identity.session_id||r.identity.session_id.length>256||
     !hash(r.identity.project_revision)||!Number.isSafeInteger(r.identity.run_epoch)||r.identity.run_epoch<0||
     !exact(r.configuration_evidence,['project_revision','configuration_sha256','runtime_lock_sha256'])||
@@ -20,7 +20,7 @@ function metadata(r:any) {
 }
 function prepare(input:any){
  if(!exact(input,[...metaKeys,'measurement'])||!exact(input.measurement,['authority','entries','complete']))throw Error('Invalid measured attempt');
- const {measurement,...receipt}=input;metadata(receipt);
+ const {measurement,...receipt}=input;validateMeasuredAttemptMetadata(receipt);
  if(!Array.isArray(measurement.entries)||measurement.entries.length!==(receipt.last_verified_tick??0)||
     typeof measurement.complete!=='boolean'||measurement.complete!==(receipt.status==='completed'&&measurement.entries.length===receipt.requested_ticks))throw Error('Invalid retained interval');
  if(measurement.authority===null){if(measurement.entries.length||measurement.complete)throw Error('Missing measurement authority');return {receipt,log:null};}
@@ -44,7 +44,7 @@ export async function encodeMeasuredAttemptRecord(input:unknown,maxBytes:unknown
 export async function inspectMeasuredAttemptRecord(blob:Blob,expected:unknown,maxBytes:unknown){
  const limit=cap(maxBytes),doc=await readManifestJson(blob,{max_bytes:limit,max_depth:20}),data:any=doc.data,span=doc.numberSpan(['schema_version']);
  if(!exact(data,['schema_version','receipt','measurement'])||data.schema_version!==1||!span||doc.source.slice(span.start,span.end)!=='1')throw Error('Invalid measured attempt record');
- metadata(data.receipt);
+ validateMeasuredAttemptMetadata(data.receipt);
  let measurement:any=null;
  if(data.measurement!==null){
   if(expected===null||expected===undefined)throw Error('Expected authority required');

@@ -10,4 +10,4 @@ const inventory=await captureProjectInventory(fixture.files.map(x=>({path:x.path
 const group=profile.profile.groups[0];
 const {world}=await createMujocoWorldFromProject(inventory,{blocks:profile.profile.blocks,
  groups:[{...group,owner_id:'channel-inspection'}],microduck_truth:profile.profile.microduck_truth},profile.policy.compileLimits);
-try{console.log(JSON.stringify({revision:inventory.project_revision,channel:world.describeMeasurementChannel()}))}finally{world.dispose()}
+try{console.log(JSON.stringify({revision:inventory.project_revision,channel:world.describeMeasurementChannel(),definition:world.describeMeasurementDefinition()}))}finally{world.dispose()}

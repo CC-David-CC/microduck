@@ -5,6 +5,7 @@ import {safeProjectPath} from '../projects/project-path.ts';
 import {createControlledProjectWorldManager, ResetFault, InspectionFault, OperationBusy, StepFault} from './project-world-manager.ts';
 import {copyBounded, sameBoundedData} from './project-world-wire.ts';
 import {channelStepBudget} from '../experiments/channel-step-budget.ts';
+import {microduckTruthDefinitionHash} from '../observations/microduck-truth-channel.ts';
 import {validateTrustedRecordingPolicy} from './trusted-recording-policy.ts';
 import {createDisplayRenderer} from '../display/three-display.ts';
 import {createAttributedDisplayRenderer} from '../display/three-attributed-display.ts';
@@ -74,7 +75,7 @@ function validSessionVisualFacts(model:any,frame:any): boolean {
 type BrowserSession = {
   readonly identity: Readonly<{session_id: string; project_revision: string; run_epoch: number}>;
   readonly state: 'ready-paused' | 'running' | 'paused' | 'faulted' | 'disposed';
-  readonly recordingChannels: readonly {group_id:string;channel_id:string;definition_sha256:string;max_entries:number;channel?:Readonly<Record<string,unknown>>}[];
+  readonly recordingChannels: readonly {group_id:string;channel_id:string;definition_sha256:string;max_entries:number;channel?:Readonly<Record<string,unknown>>;definition?:Readonly<Record<string,unknown>>}[];
   readonly targets: readonly Readonly<{group_id:string;field:string;min:number;max:number}>[];
   setTarget(request:unknown):Promise<unknown>;
   targetHistory():Readonly<{entries:readonly Readonly<Record<string,unknown>>[];truncated:boolean}>;
@@ -407,7 +408,7 @@ function makeHost(manager: any, identity: any, budget: number, assetNotices: rea
       const entries:any[]=[]; let authority:any=null;
       try {
         try { lease = await acquisition; }
-        catch { return freezeData({status, identity, configuration_evidence:declaration, requested_ticks:requested, last_verified_tick:verified, reported_steps:reported,...(recording ? {measurement:{authority:null,entries:[],complete:false,...(channelPolicy ? {channel:channelPolicy.channel} : {})}} : {})}); }
+        catch { return freezeData({status, identity, configuration_evidence:declaration, requested_ticks:requested, last_verified_tick:verified, reported_steps:reported,...(recording ? {measurement:{authority:null,entries:[],complete:false,...(channelPolicy ? {channel:channelPolicy.channel,...(channelPolicy.definition ? {definition:channelPolicy.definition} : {})} : {})}} : {})}); }
         try {
           let first: any;
           try { first = await inspect(); }
@@ -463,7 +464,7 @@ function makeHost(manager: any, identity: any, budget: number, assetNotices: rea
       }
       if (hasPrimary) throw primary;
       return freezeData({status, identity, configuration_evidence:declaration, requested_ticks:requested, last_verified_tick:verified, reported_steps:reported,
-        ...(recording ? {measurement:{authority,entries,complete:status==='completed' && entries.length===requested,...(channelPolicy ? {channel:channelPolicy.channel} : {})}} : {})});
+        ...(recording ? {measurement:{authority,entries,complete:status==='completed' && entries.length===requested,...(channelPolicy ? {channel:channelPolicy.channel,...(channelPolicy.definition ? {definition:channelPolicy.definition} : {})} : {})}} : {})});
     })();
     return Object.freeze({result, cancel() {cancelled = true; return result.then(() => undefined);}});
   }
@@ -905,7 +906,11 @@ export async function createBrowserSession(input: unknown): Promise<BrowserSessi
   const budget = policyInput.maxReplyBytes;
   const policy = copyBounded(policyInput, budget);
   const revision = runInput.project_revision;
-  if (Object.hasOwn(policy,'approvedRecordingGrants')) validateTrustedRecordingPolicy(policy.approvedRecordingGrants,revision);
+  if (Object.hasOwn(policy,'approvedRecordingGrants')) {
+    validateTrustedRecordingPolicy(policy.approvedRecordingGrants,revision);
+    for(const row of policy.approvedRecordingGrants)if(Object.hasOwn(row,'definition') &&
+      await microduckTruthDefinitionHash(row.definition)!==row.definition_sha256)throw Error('Invalid recording definition digest');
+  }
   const profile = copyBounded(runInput.profile, budget);
   const controllers = copyBounded(runInput.controllers, budget);
   const mount = input.mount, runnerOrigin = input.runnerOrigin, frameURL = input.frameURL;
@@ -933,7 +938,7 @@ export async function createBrowserSession(input: unknown): Promise<BrowserSessi
     manager = createControlledProjectWorldManager({
       inventoryLimits: policy.inventoryLimits, compileLimits: policy.compileLimits, timeoutMs: policy.timeoutMs,
       maxReplyBytes: budget, frameTimeoutMs: policy.frameTimeoutMs, approvedGrants: policy.approvedGrants,
-      ...(Object.hasOwn(policy,'approvedRecordingGrants') ? {approvedRecordingGrants:policy.approvedRecordingGrants} : {}),
+      ...(Object.hasOwn(policy,'approvedRecordingGrants') ? {approvedRecordingGrants:policy.approvedRecordingGrants.map(({definition,...row}:any)=>row)} : {}),
       mount, runnerOrigin, frameURL,
       ...(Object.hasOwn(policy, 'wasmUrl') ? {wasmUrl: policy.wasmUrl} : {}),
     });
@@ -960,7 +965,7 @@ export async function createBrowserSession(input: unknown): Promise<BrowserSessi
           !row.names.every((s:unknown) => typeof s === 'string' && s.length <= 128 && /^[A-Za-z0-9_][A-Za-z0-9_-]*$/.test(s))) throw new Error('Invalid asset notices');
       seen.add(row.path);
     }
-    return makeHost(manager, promoted.identity, budget, freezeData(rows), freezeData((policy.approvedRecordingGrants??[]).map((row:any)=>({group_id:row.group_id,channel_id:row.channel_id,definition_sha256:row.definition_sha256,max_entries:row.max_entries,...(Object.hasOwn(row,'channel') ? {channel:row.channel} : {})}))),targetCatalog.targets,inventory,controllers.map((c:any)=>({group_id:c.group_id,intent:c.intent})));
+    return makeHost(manager, promoted.identity, budget, freezeData(rows), freezeData((policy.approvedRecordingGrants??[]).map((row:any)=>({group_id:row.group_id,channel_id:row.channel_id,definition_sha256:row.definition_sha256,max_entries:row.max_entries,...(Object.hasOwn(row,'channel') ? {channel:row.channel} : {}),...(Object.hasOwn(row,'definition') ? {definition:row.definition} : {})}))),targetCatalog.targets,inventory,controllers.map((c:any)=>({group_id:c.group_id,intent:c.intent})));
   } catch (error) {
     if (manager) { try { await manager.dispose(); } catch { /* Preserve the construction failure. */ } }
     throw error;

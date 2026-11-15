@@ -1,3 +1,10 @@
 /assets/microduck-project.json
 
 /assets/microduck-visual.json
+
+# Generated dependency and development outputs
+node_modules/
+dist/
+.build/
+__pycache__/
+*.py[cod]

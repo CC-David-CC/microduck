@@ -26,28 +26,17 @@ whole generated file's SHA-256. The output matches the previously qualified
 fixture byte-for-byte; generated source assets and downloaded binaries stay
 outside Git. This does not establish source safety or physical correctness.
 
-On [local build host], Node 24.22.1 reconstructed SHA-256
-b32639fc7783f4d1f249f17ed458faf8b9e65ab3cbbdbfdcd844179265a18a82
-without the earlier fixture. A modified mesh was rejected before output.
-Forty-seven cumulative tests passed, none failed or skipped. The initial
-missing-source-tool failure and cumulative output are in evidence/. A later
-attempt encountered the /tmp per-user quota; rerunning with TMPDIR on the
-artifact volume succeeded. The no-eval MuJoCo build remains a separate pinned
-prerequisite, and production runner hosting, CSP, full experiment replay and
-release qualification remain unfinished.
-
-
 ## Qualified strict-CSP MuJoCo artifacts
 
-The exact previously qualified no-eval engine files are retained on fleet storage at `[local build host]:[local artifact store]`. Copy that directory to the build machine, then from this app directory after `npm ci` run:
+The build requires the qualified MuJoCo 3.17.0 no-eval runtime files. After
+`npm ci`, set `MICRODUCK_MUJOCO_NOEVAL` to the directory containing those
+files and run `node tools/prepare-engine.mjs`. The staging tool checks all
+three SHA-256 values before writing into the local npm package.
 
-```sh
-MICRODUCK_MUJOCO_NOEVAL=/path/to/copied-qualified-engine node tools/prepare-engine.mjs
-```
-
-The staging tool checks the exact SHA-256 of all three files before writing the local npm package. On 2026-11-02 the files were copied back from [local build host] to [local build host] and staged in an isolated test; a modified file was rejected before any destination change. A local store copy is not a backup guarantee; the earlier original remains separately on [local build host].
-
-The upstream source and no-JavaScript-evaluation patch are documented in `tools/mujoco-noeval.patch`; `tools/build-noeval-engine-candidate.sh` builds a candidate from a separate pinned source checkout and SDK in a new work directory and refuses to call it qualified unless all three original hashes match. Emscripten 4.0.10, CMake, Ninja, Node and npm are needed; CMake/npm may fetch their pinned dependencies. An independent [local build host] rebuild produced a byte-identical JS file and type declarations with compiler path remapping, but the WASM still differed in LLVM-generated function names. Every non-name WASM section matched byte-for-byte in that diagnosis. The candidate is therefore **not accepted** by the hash gate. Exact cross-directory source-build reproducibility remains unresolved; do not silently replace the qualified artifact with that candidate.
+The corresponding source patch and candidate builder are in `tools/`.
+An exact cold rebuild of the WASM is still unresolved. Use the qualified
+runtime files for the existing build. The public source checkout excludes
+the runtime binaries, generated build assets, and local test evidence.
 
 ## Published Microduck display rig
 
@@ -57,4 +46,4 @@ The desktop build also needs the pinned visual rig. From the same pinned Space c
 MICRODUCK_SPACE_DIR=/path/to/space MICRODUCK_VISUAL_OUTPUT=assets/microduck-visual.json node tools/prepare-microduck-visual.mjs
 ```
 
-The tool checks the rig and each of its 38 STL meshes against `tools/microduck-visual-manifest.json`. It produces a 6,743,770-byte inert display asset with SHA-256 `ee72047f7773cf2c9ae4f975db38921947bc11a4cb3ef242ed25227d6a452abd`. The app checks the exact digest before rendering. The visual rig follows named simulation bodies; it does not change the model, policy or robot observations. See `PUBLISHED-VISUAL-CHECKPOINT.md` for evidence and differences.
+The tool checks the rig and each of its 38 STL meshes against `tools/microduck-visual-manifest.json`. It produces a 6,743,770-byte inert display asset with SHA-256 `ee72047f7773cf2c9ae4f975db38921947bc11a4cb3ef242ed25227d6a452abd`. The app checks the exact digest before rendering. The visual rig follows named simulation bodies; it does not change the model, policy or robot observations. 

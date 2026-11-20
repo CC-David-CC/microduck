@@ -8,3 +8,8 @@ dist/
 .build/
 __pycache__/
 *.py[cod]
+
+# Private local test evidence
+/evidence/
+*.log
+*.requests.jsonl
